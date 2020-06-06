@@ -1,0 +1,9 @@
+$ cat .gitignore
+__pycache__/
+venv/
+.idea/
+config.py
+*.txt
+*.json
+*.db
+database.db
