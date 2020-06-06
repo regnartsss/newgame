@@ -1,0 +1,7 @@
+$ cat .gitignore
+__pycache__/
+venv/
+.idea/
+config.py
+*.json
+
