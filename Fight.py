@@ -257,9 +257,8 @@ WHERE battle_enemy.user_id = {message.chat.id} AND resource.user_id = {message.c
         await sql.sql_insert(f'delete from battle_enemy where user_id == {message.chat.id}')
         await sql.sql_insert(f'delete from combinations where user_id = {message.chat.id}')
         time.sleep(2)
-        await recovery_energy(message)
-        await recovery_health(message)
-        print(field)
+
+        # print(field)
         if field == 0:
             request = f"""
                            UPDATE heroes SET experience_used = experience_used + 5 WHERE user_id = {message.chat.id};
@@ -267,6 +266,8 @@ WHERE battle_enemy.user_id = {message.chat.id} AND resource.user_id = {message.c
                            UPDATE maps SET resource = 'null', lvl = 0, number=0, id=0 WHERE maps_id = {cell_r};                           
                     """
             await sql.sql_insertscript(request)
+            await recovery_energy(message)
+            await recovery_health(message)
             await message.answer(text, reply_markup=keyboardmap())
             await goto(message=message, call="  ")
         else:
@@ -279,6 +280,8 @@ WHERE battle_enemy.user_id = {message.chat.id} AND resource.user_id = {message.c
                             ON heroes.lvlheroes = data_heroes.lvlheroes WHERE user_id = {message.chat.id})
                         """
             await sql.sql_insertscript(request)
+            await recovery_energy(message)
+            await recovery_health(message)
             await message.answer(text, reply_markup=keyboardmap())
             await field_goto(message)
     elif data == "enemy":

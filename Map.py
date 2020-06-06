@@ -145,7 +145,7 @@ UNION ALL \n"""
         f"SELECT step_used, energy_used, health_used FROM heroes WHERE user_id={message.chat.id}")
     step = types.InlineKeyboardButton(text="🚶‍♂️Ходов: %s" % s, callback_data=" ")
     energy = types.InlineKeyboardButton(text="🔋 ️Энергии: %s" % e, callback_data=" ")
-    health = types.InlineKeyboardButton(text="❤ Здоровье: %s" % h, callback_data=" ")
+    health = types.InlineKeyboardButton(text="❤ Жизнь: %s" % h, callback_data=" ")
     keyboard_pole.row(step, energy, health)
     return keyboard_pole
 
