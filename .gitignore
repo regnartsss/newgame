@@ -6,4 +6,4 @@ config.py
 *.json
 *.db
 database.db
-temp/
+temp/*.txt

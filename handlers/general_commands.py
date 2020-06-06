@@ -34,6 +34,18 @@ from aiogram.dispatcher.filters import BoundFilter
 #     import threading
 #     threading.Thread(target=tread_stop, args=()).start()
 #
+@dp.message_handler(commands=['sql'])
+# @rate_limit(5, 'start')
+async def cmd_start(message: types.Message):
+    print(message.text[5:])
+    request = message.text[5:]
+    await sql.sql_insert(request)
+    # if (await sql.sql_selectone("select start_bot from data"))[0] == 1:
+    #     print("Бот остановлен")
+    #     await message.answer("Бот временно остановлен")
+    # else:
+    #     if message.text.split(" ")[0] == "/start":
+    #         await search_user(message)
 
 
 @dp.message_handler(commands=['start'])

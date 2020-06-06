@@ -260,7 +260,7 @@ WHERE battle_enemy.user_id = {message.chat.id} AND resource.user_id = {message.c
         await recovery_energy(message)
         await recovery_health(message)
         print(field)
-        if field == "0":
+        if field == 0:
             request = f"""
                            UPDATE heroes SET experience_used = experience_used + 5 WHERE user_id = {message.chat.id};
                            UPDATE resource SET gold = gold + {r_gold} WHERE user_id = {message.chat.id};
@@ -368,6 +368,7 @@ UPDATE resource SET {row[0]} = {row[0]} + {row[4]}, production = production + {r
 UPDATE maps SET number = number - {row[4]} WHERE maps_id = {row[1]};
 UPDATE maps SET number = 0, resource = 'null', lvl = 0 WHERE maps_id = {row[1]} and number <= 0;
 """
+    print(request)
     await sql.sql_insertscript(request)
     return f"Обыскав врага, вы нашли {row[4]}ед. ресурса"
 # r_num = a.count(3)
@@ -442,8 +443,6 @@ async def field_goto(call):
             f"""update heroes set message_id = {call.message.chat.id} where user_id = {call.message.chat.id}""")
         # await bot.send_message(text="Вы вышли", chat_id=call.message.chat.id, reply_markup=keyboardmap())
         await goto(message=call.message, call=call)
-
-
 
 
     elif result == 5:
