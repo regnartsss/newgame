@@ -315,6 +315,7 @@ async def recovery_energy(message):
 
     if experience_used >= experience:
         await sql.sql_insert(f"UPDATE heroes SET lvlheroes = lvlheroes + 1, experience_used = 0 WHERE user_id = {user_id}")
+        lvl=await sql.sql_selectone(f"SELECT lvlheroes, referral")
         # await update_statistic(user_id)
         await start_parameters(user_id)
 
