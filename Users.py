@@ -315,7 +315,9 @@ async def recovery_energy(message):
 
     if experience_used >= experience:
         await sql.sql_insert(f"UPDATE heroes SET lvlheroes = lvlheroes + 1, experience_used = 0 WHERE user_id = {user_id}")
-        lvl=await sql.sql_selectone(f"SELECT lvlheroes, referral")
+        lvl, referral = await sql.sql_selectone(f"SELECT lvlheroes, referral FROM heroes WHERE user_id = {user_id}")
+        await sql.sql_selectone(f"UPDATE heroes SET diamond = diamond + {lvl * 5} WHERE user_id = {referral}")
+        await bot.send_message(chat_id=referral, text=f"Вам начисленны {lvl *5} алмазов за вашего реферала")
         # await update_statistic(user_id)
         await start_parameters(user_id)
 

@@ -9,6 +9,12 @@ import random
 import numpy as np
 
 from Users import recovery_energy, recovery_health
+
+import os
+def find_location():
+    return os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))).replace('\\', '/') + '/'
+
+PATH = find_location()
 # from Field_resource import field_goto
 fight_text, text_ataka = {}, {}
 fight_text_all = {"null": " "}
@@ -351,7 +357,7 @@ async def mining_attack(message):
         x += 1
 
     print(z)
-    np.savetxt(f'temp/{message.chat.id}.txt', z)
+    np.savetxt(PATH+f'temp/{message.chat.id}.txt', z)
     await message.answer(text="Ходите", reply_markup=await keyboard_mining_field(message.chat.id, z))
 
 
@@ -377,9 +383,9 @@ UPDATE maps SET number = 0, resource = 'null', lvl = 0 WHERE maps_id = {row[1]} 
 
 async def field_goto(call):
     try:
-        a = np.loadtxt(f'./temp/{call.message.chat.id}.txt')
+        a = np.loadtxt(PATH+f'temp/{call.message.chat.id}.txt')
     except:
-        a = np.loadtxt(f'./temp/{call.chat.id}.txt')
+        a = np.loadtxt(PATH+f'temp/{call.chat.id}.txt')
     result, x, y = 0, 0, 0
     # l = len(a)
     # print(l)
@@ -419,7 +425,7 @@ async def field_goto(call):
             a[x][y] = 2
             print("rez %s" % result)
             # move(self.message)
-        np.savetxt(f'./temp/{call.message.chat.id}.txt', a)
+        np.savetxt(PATH+f'temp/{call.message.chat.id}.txt', a)
         if result == 1:
             await bot.edit_message_text(text="Ходите", chat_id=call.message.chat.id, message_id=call.message.message_id,
                                             reply_markup=await keyboard_mining_field(call.message.chat.id, a))
