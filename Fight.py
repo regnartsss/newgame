@@ -377,9 +377,9 @@ UPDATE maps SET number = 0, resource = 'null', lvl = 0 WHERE maps_id = {row[1]} 
 
 async def field_goto(call):
     try:
-        a = np.loadtxt(f'temp/{call.message.chat.id}.txt')
+        a = np.loadtxt(f'./temp/{call.message.chat.id}.txt')
     except:
-        a = np.loadtxt(f'temp/{call.chat.id}.txt')
+        a = np.loadtxt(f'./temp/{call.chat.id}.txt')
     result, x, y = 0, 0, 0
     # l = len(a)
     # print(l)
@@ -419,7 +419,7 @@ async def field_goto(call):
             a[x][y] = 2
             print("rez %s" % result)
             # move(self.message)
-        np.savetxt(f'temp/{call.message.chat.id}.txt', a)
+        np.savetxt(f'./temp/{call.message.chat.id}.txt', a)
         if result == 1:
             await bot.edit_message_text(text="Ходите", chat_id=call.message.chat.id, message_id=call.message.message_id,
                                             reply_markup=await keyboard_mining_field(call.message.chat.id, a))
