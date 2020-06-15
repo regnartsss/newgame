@@ -1,7 +1,7 @@
 # import telebot  # Импортируем объект бота
-from aiogram import executor
 from aiogram.types import ReplyKeyboardMarkup
-import texting
+from text import texting
+
 
 def keyboard_map():
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -76,7 +76,7 @@ def keyboaryesno():
 
 
 def keyboard_info():
-    keyboard = ReplyKeyboardMarkup()
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.row("Пригласить", "💬 Чат")
     keyboard.row("Обратная связь")
     keyboard.row("Помочь проекту")
@@ -117,12 +117,17 @@ def keyboard_locat():
     return keyboard
 
 def keyboard_castle():
-    keyboard = ReplyKeyboardMarkup()
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.row(texting.button_castle_attack)
     keyboard.row(texting.button_castle_escape)
     return keyboard
 
 def keyboard_castle_escape_field():
-    keyboard = ReplyKeyboardMarkup()
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.row(texting.button_castle_escape_field)
+    return keyboard
+
+def keyboard_buy_cancel():
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.row(texting.button_buy_cancel)
     return keyboard

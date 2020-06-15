@@ -1,7 +1,6 @@
 import sqlite3
 
 import logging
-from load_all import benchmark
 import os
 def find_location():
     return os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))).replace('\\', '/') + '/'

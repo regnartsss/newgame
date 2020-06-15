@@ -1,8 +1,8 @@
-from texting import button_building, text_building_update, button_update, button_market,text_building_resource,text_building_goto,button_back,text_building_up
-import sql
+from text.texting import button_building, text_building_update, button_update, button_market,text_building_resource,text_building_goto,button_back,text_building_up
+from utils import sql
 from aiogram import types
-from load_all import dp, bot, benchmark
-from Users import info_heroes
+from loader import bot
+from work.Users import info_heroes
 
 
 async def building(message):
@@ -215,7 +215,7 @@ async def update(message, dat):
     req = "Update resource " \
           "SET wood = wood - %s, stone = stone - %s, iron = iron -%s, food = food - %s " \
           "WHERE user_id = %s"
-    await sql.sql_insert(req% (request[0], request[1], request[2], request[3], message.chat.id))
+    await sql.sql_insert(req % (request[0], request[1], request[2], request[3], message.chat.id))
     text = text_building_up
     data = "build_%s" % dat
     await build(data, message, text)

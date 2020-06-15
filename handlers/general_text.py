@@ -1,20 +1,17 @@
 from aiogram import types
-from load_all import dp, bot
+from loader import dp, bot
 from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters.state import State, StatesGroup
-import sql
-import texting
-import keyboard
-import Map
-import Build
-import Fight
-import Users
-import data
+from utils import sql
+from text import texting
+from keyboards import keyboard
+from work import Fight, Shop, Top
+from work import Build, Map, Users, Training
+from data.config import admins
 import importlib
-import Training
-import Shop
-import Top
-from middleware_and_antiflood import rate_limit
+from middlewares.middleware_and_antiflood import rate_limit
+from work.BattleCastle import Castle
+from work.Buy import function_buy, Buy
+
 
 
 async def reload_module():
@@ -54,10 +51,18 @@ async def process_name(message: types.Message, state: FSMContext):
             await state.finish()
 
 
-@dp.message_handler(content_types=types.ContentTypes.ANY)
+@dp.message_handler(state=Buy.amount)
+async def process_name(message: types.Message, state: FSMContext):
+    await function_buy(message, state)
+
+
+
+
+
+@dp.message_handler(content_types=types.ContentTypes.TEXT)
 @rate_limit(0.5)
 async def all_other_messages(message: types.Message):
-    if message.chat.id in data.admin_id:
+    if message.chat.id in admins:
         if message.text == "reload":
             await reload_module()
             await message.answer("Модули обновлены")
@@ -81,8 +86,10 @@ async def all_other_messages(message: types.Message):
             await sql.sql_insert(
                 "update heroes set message_id = %s where user_id = %s" % (message.message_id + 2, message.chat.id))
             if message.text == texting.button_goto or message.text == texting.button_goto_two:
+                print("оступить")
                 request = f"""delete from battle_enemy where user_id == {message.chat.id};
                                 delete from combinations where user_id = {message.chat.id};
+                                
                             """
                 await sql.sql_insertscript(request)
                 await bot.send_message(text="⏱ Вывод карты ⏱", chat_id=message.chat.id,
@@ -91,8 +98,16 @@ async def all_other_messages(message: types.Message):
             # Вернуться на карту
             elif message.text == texting.button_mining_map:
                 await Map.timer_mining(message, "stop")
-            # elif message.text == texting.button_castle_escape:
-            #     Castle(message=message).castle_escape()
+            elif message.text == texting.button_castle_escape or message.text == texting.button_castle_escape_field:
+                 print("asdasd")
+                 await Castle(message=message, call="").castle_escape()
+                 await sql.sql_insert(
+                     "update heroes set message_id = %s where user_id = %s" % (message.message_id + 2, message.chat.id))
+
+                 # await bot.send_message(text="⏱ Вывод карты ⏱", chat_id=message.chat.id,
+                 #                        reply_markup=keyboard.keyboardmap())
+                 await Map.goto(message=message, call=" ")
+
             # elif message.text == texting.button_goto:
             #     Fight(message=message).fight()
             else:
@@ -185,9 +200,11 @@ async def all_other_messages(message: types.Message):
             await message.answer(text=await Top.top_castle(message))
 
         #
-        # elif message.text == texting.button_castle_attack:
-        #     users[str(message.chat.id)]["mess_id"] = message.message_id + 1
-        #     Castle(message).castle_pole()
+        elif message.text == texting.button_castle_attack:
+            await sql.sql_insert(
+                "update heroes set message_id = %s where user_id = %s" % (message.message_id + 3, message.chat.id))
+            # users[str(message.chat.id)]["mess_id"] = message.message_id + 1
+            await Castle(message, call="").castle_pole()
         # elif message.text == texting.button_castle_escape_field:
         #     Castle(message).castle_escape_field()
         else:

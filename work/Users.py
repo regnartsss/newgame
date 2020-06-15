@@ -1,18 +1,17 @@
-import sql
-import texting
-import keyboard
+from utils import sql
+from text import texting
+from keyboards import keyboard
 import random
 from aiogram.types import ReplyKeyboardMarkup
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from datetime import datetime
 from aiogram import types
-from asyncpg import Connection, Record
+from asyncpg import Record
 from asyncpg.exceptions import UniqueViolationError
-from load_all import bot
-import threading
-import time
-import data
-from load_all import benchmark
+from loader import bot
+import database
+import asyncio
+
 
 class NewName(StatesGroup):
     name = State()
@@ -20,17 +19,18 @@ class NewName(StatesGroup):
 
 
 class DB_USER:
-    ADD_NEW_USER_REFERRAL = f"INSERT INTO heroes(user_id, 'username', 'data', 'avatar', 'nik_name',referral) VALUES (%s, '%s', '%s', '%s', '%s', %s)"
+    ADD_NEW_USER_REFERRAL = f"""INSERT INTO heroes(user_id, 'username', 'data', 'avatar', 'nik_name',referral) 
+VALUES (%s, '%s', '%s', '%s', '%s', %s)"""
     ADD_NEW_USER = "INSERT INTO heroes(user_id, username, data, avatar, nik_name) VALUES (%s, '%s', '%s', '%s', '%s')"
     COUNT_USERS = "SELECT COUNT(*) FROM heroes"
     # GET_ID = "SELECT id FROM users WHERE chat_id = $1"
     CHECK_REFERRALS = "SELECT user_id FROM heroes WHERE referral = %s"
 
-    # request = f"INSERT INTO resource VALUES ({user_id},0,0,0,0,0,0,'null',0,0,0,'null',0,'strftime('%Y:%m:%d:%H:%M:%S','now','localtime')',0,0)"
     # ADD_NEW_USER_RESOURCE =
     # CHECK_BALANCE = "SELECT balance FROM users WHERE chat_id = $1"
     # ADD_MONEY = "UPDATE users SET balance=balance+$1 WHERE chat_id = $2"
     ADD_NEW_USER_WARRIOR = "INSERT INTO warrior VALUES (%s, %s,0,0,0)"
+
     async def add_new_user(self, referral=None):
 
         user = types.User.get_current()
@@ -49,12 +49,13 @@ class DB_USER:
             print("нет реферала")
             command = self.ADD_NEW_USER
         # print(self.ADD_NEW_USER_RESOURCE)
-        request = f"""INSERT INTO resource (user_id, farm_timer) VALUES ({user_id}, strftime('%Y:%m:%d:%H:%M:%S','now','localtime'))"""
-#                   INSERT INTO warrior VALUES ({user_id}, 1,0,0,0);
-# INSERT INTO warrior VALUES ({user_id}, 2,0,0,0);
-# INSERT INTO warrior VALUES ({user_id}, 3,0,0,0);
-# INSERT INTO warrior VALUES ({user_id}, 4,0,0,0);
-# INSERT INTO warrior VALUES ({user_id}, 5,0,0,0);"""
+        request = f"""INSERT INTO resource (user_id, farm_timer) 
+VALUES ({user_id}, strftime('%Y:%m:%d:%H:%M:%S','now','localtime'))"""
+        #                   INSERT INTO warrior VALUES ({user_id}, 1,0,0,0);
+        # INSERT INTO warrior VALUES ({user_id}, 2,0,0,0);
+        # INSERT INTO warrior VALUES ({user_id}, 3,0,0,0);
+        # INSERT INTO warrior VALUES ({user_id}, 4,0,0,0);
+        # INSERT INTO warrior VALUES ({user_id}, 5,0,0,0);"""
         await sql.sql_insert(request)
         await self.warrior_user()
         try:
@@ -62,7 +63,6 @@ class DB_USER:
             return record_id
         except UniqueViolationError:
             pass
-
 
     async def count_users(self):
         record: Record = await sql.sql_selectone(self.COUNT_USERS)
@@ -76,7 +76,7 @@ class DB_USER:
 
         while i <= 5:
             await sql.sql_insert(command % (user_id, i))
-            i +=1
+            i += 1
 
     async def check_referrals(self):
         user_id = types.User.get_current().id
@@ -209,11 +209,11 @@ WHERE heroes.user_id = {user_id} AND resource.user_id = {user_id}"""
     food = row[13]
     gold = row[14]
     diamond = row[15]
-    coord = coordinates(cell)
+    coord = await coordinates(cell)
     info_hero = texting.text_info_heroes % (
-         avatar, user_id, nikname, coord, level, energy_used, energy, experience_used, experience, health_used, health,
-         hit,
-         lvlstep, wolk_used, wolk, step_used, step, gold, diamond)
+        avatar, user_id, nikname, coord, level, energy_used, energy, experience_used, experience, health_used, health,
+        hit,
+        lvlstep, wolk_used, wolk, step_used, step, gold, diamond)
     stat = texting.text_info_storage % (stone, wood, iron, food, gold)
     if key == "heroes":
         return info_hero
@@ -224,37 +224,37 @@ WHERE heroes.user_id = {user_id} AND resource.user_id = {user_id}"""
 
 
 # Координаты героя
-def coordinates(cell):
+async def coordinates(cell):
     x = int(cell / 100)
     y = cell - x * 100
     return "%s:%s" % (x, y)
 
 
-async def update_statistic(user_id):
-    # print(user_id)
-    pass
-    # if data == "step":
-
-
-#         if users[str(message.chat.id)]["wolk_used"] >= step[users[str(message.chat.id)]["lvlstep"]]["wolk"]:
-#             users[str(message.chat.id)]["lvlstep"] += 1
-#             users[str(message.chat.id)]["wolk_used"] = 0
-#         else:
-#             pass
-#     elif data == "experience":
-#         if users[str(message.chat.id)]["experience_used"] >= heroes[users[str(message.chat.id)]["lvlheroes"]][
-#             "experience"]:
-#             users[str(message.chat.id)]["lvlheroes"] += 1
-#             users[str(message.chat.id)]["experience_used"] = 0
-#             users[str(message.chat.id)]["health_used"] = heroes[users[str(message.chat.id)]["lvlheroes"]]["health"]
-#             users[str(message.chat.id)]["energy_used"] = heroes[users[str(message.chat.id)]["lvlheroes"]]["energy"]
-#             chat = int(hero[str(message.chat.id)]["ref"])
-#             if chat != "0":
-#                 bot.send_message(chat_id=chat, text=texting.text_ref_up % users[str(message.chat.id)]["lvlheroes"])
-#                 resource[str(chat)]["diamond"] += users[str(message.chat.id)]["lvlheroes"]
-#         else:
-#             pass
-#     save("users")
+# async def update_statistic(user_id):
+#     # print(user_id)
+#     pass
+#     # if data == "step":
+#
+#
+# #         if users[str(message.chat.id)]["wolk_used"] >= step[users[str(message.chat.id)]["lvlstep"]]["wolk"]:
+# #             users[str(message.chat.id)]["lvlstep"] += 1
+# #             users[str(message.chat.id)]["wolk_used"] = 0
+# #         else:
+# #             pass
+# #     elif data == "experience":
+# #         if users[str(message.chat.id)]["experience_used"] >= heroes[users[str(message.chat.id)]["lvlheroes"]][
+# #             "experience"]:
+# #             users[str(message.chat.id)]["lvlheroes"] += 1
+# #             users[str(message.chat.id)]["experience_used"] = 0
+# #             users[str(message.chat.id)]["health_used"] = heroes[users[str(message.chat.id)]["lvlheroes"]]["health"]
+# #             users[str(message.chat.id)]["energy_used"] = heroes[users[str(message.chat.id)]["lvlheroes"]]["energy"]
+# #             chat = int(hero[str(message.chat.id)]["ref"])
+# #             if chat != "0":
+# #                 bot.send_message(chat_id=chat, text=texting.text_ref_up % users[str(message.chat.id)]["lvlheroes"])
+# #                 resource[str(chat)]["diamond"] += users[str(message.chat.id)]["lvlheroes"]
+# #         else:
+# #             pass
+# #     save("users")
 
 
 # Подсчет шагов
@@ -268,7 +268,9 @@ WHERE user_id = {user_id}""")
         print("Включить таймер")
         await sql.sql_insert(
             f"UPDATE heroes SET step_used = step_used - 1, wolk_used = wolk_used + 1 WHERE user_id = {user_id}")
-        threading.Thread(target=timer_step, args=(step, user_id,)).start()
+        # threading.Thread(target=timer_step, args=(step, user_id,)).start()
+        # await
+        asyncio.ensure_future(timer_step(step, user_id))
     elif step_used == 0:
         print("Ходы кончились")
     elif step_used < step:
@@ -279,20 +281,20 @@ WHERE user_id = {user_id}""")
 
 
 # Восстановление шагов
-def timer_step(step, user_id):
+async def timer_step(step, user_id):
     print("старт шагов")
-    while sql.sql_selectone_no_await("SELECT step_used FROM heroes WHERE user_id = %s" % user_id)[0] < step:
-        time.sleep(data.time_step) # in seconds
-        sql.sql_insertscript_no_await("UPDATE heroes SET step_used = step_used + 1 WHERE user_id = %s" % user_id)
+    while (await sql.sql_selectone("SELECT step_used FROM heroes WHERE user_id = %s" % user_id))[0] < step:
+        await asyncio.sleep(database.time_step)  # in seconds
+        await sql.sql_insert(f"UPDATE heroes SET step_used = step_used + 1 WHERE user_id = %s" % user_id)
 
 
 # new Восстановление энергии
-def timer_energy(energy, user_id):
+async def timer_energy(energy, user_id):
     print("старт энергия")
-    while sql.sql_selectone_no_await(f"SELECT energy_used FROM heroes WHERE user_id = {user_id}")[0] < energy:
+    while (await sql.sql_selectone(f"SELECT energy_used FROM heroes WHERE user_id = {user_id}"))[0] < energy:
         print("start energy")
-        time.sleep(data.time_energy)  # in seconds
-        sql.sql_insertscript_no_await(f"UPDATE heroes SET energy_used = energy_used + 1 WHERE user_id = {user_id}")
+        await asyncio.sleep(database.time_energy)  # in seconds
+        await sql.sql_insert(f"UPDATE heroes SET energy_used = energy_used + 1 WHERE user_id = {user_id}")
 
 
 # new Подсчет энергии
@@ -303,23 +305,24 @@ async def recovery_energy(message):
         ON heroes.lvlheroes = data_heroes.lvlheroes
         WHERE user_id = {user_id}"""
     energy, energy_used, experience, experience_used = await sql.sql_selectone(request)
-    print(f"энергия {energy}")
-    print(f"энергия_used {energy_used}")
     if energy_used >= energy:
         await sql.sql_insert(f"UPDATE heroes SET energy_used = energy_used - 1 WHERE user_id = {user_id}")
-        threading.Thread(target=timer_energy, args=(energy, user_id,)).start()
+        # threading.Thread(target=timer_energy, args=(energy, user_id,)).start()
+        asyncio.ensure_future(timer_energy(energy, user_id))
     elif energy_used == 0:
         print("Энергия кончилась")
     elif energy_used < energy:
         await sql.sql_insert(f"UPDATE heroes SET energy_used = energy_used - 1 WHERE user_id = {user_id}")
     if experience_used >= experience:
         print("Новый лвл")
-        await sql.sql_insert(f"UPDATE heroes SET lvlheroes = lvlheroes + 1, experience_used = experience_used - {experience} WHERE user_id = {user_id}")
+        await sql.sql_insert(
+            f"""UPDATE heroes SET lvlheroes = lvlheroes + 1, experience_used = experience_used - {experience} 
+WHERE user_id = {user_id}""")
         lvl, referral = await sql.sql_selectone(f"SELECT lvlheroes, referral FROM heroes WHERE user_id = {user_id}")
         request = f"UPDATE resource SET diamond = diamond + {int(lvl) * 5} WHERE user_id = {referral}"
         print(request)
         await sql.sql_selectone(request)
-        await bot.send_message(chat_id=referral, text=f"Вам начисленны {int(lvl) *5} алмазов за вашего реферала")
+        await bot.send_message(chat_id=referral, text=f"Вам начисленны {int(lvl) * 5} алмазов за вашего реферала")
         # await update_statistic(user_id)
         await start_parameters(user_id)
 
@@ -332,16 +335,13 @@ async def recovery_health(message):
          WHERE user_id = {user_id}"""
     health, health_used = await sql.sql_selectone(request)
     if health_used < health:
-        # sql.sql_insert(f"UPDATE heroes SET health_used = health_used - 1 WHERE user_id = {user_id}")
-        threading.Thread(target=timer_health, args=(health, user_id,)).start()
+        asyncio.ensure_future(timer_health(health, user_id))
     else:
         print("Здоровье кончилось")
-    # elif health_used < health:
-    #     sql.sql_insert(f"UPDATE heroes SET energy_used = energy_used - 1 WHERE user_id = {user_id}")
 
 
-def timer_health(health, user_id):
-    while sql.sql_selectone_no_await(f"SELECT health_used FROM heroes WHERE user_id = {user_id}")[0] < health:
+async def timer_health(health, user_id):
+    while (await sql.sql_selectone(f"SELECT health_used FROM heroes WHERE user_id = {user_id}"))[0] < health:
         print("start health")
-        time.sleep(data.time_healts)  # in seconds
-        sql.sql_insertscript_no_await(f"UPDATE heroes SET health_used = {health} WHERE user_id = {user_id}")
+        await asyncio.sleep(database.time_healts)  # in seconds
+        await sql.sql_insert(f"UPDATE heroes SET health_used = {health} WHERE user_id = {user_id}")

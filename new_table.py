@@ -1,4 +1,4 @@
-from sql import sql_insertscript_no_await
+from utils.sql import sql_insertscript_no_await
 
 table_resource = """CREATE TABLE resource (
     user_id       INT  DEFAULT (0),

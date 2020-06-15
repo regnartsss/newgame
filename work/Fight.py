@@ -1,14 +1,14 @@
-import texting
+from text import texting
 from aiogram import types
-from keyboard import keyboard_battle_one_back, keyboardmap, keyboard_main_menu
-from load_all import bot
-import sql
+from keyboards.keyboard import keyboard_battle_one_back, keyboardmap, keyboard_main_menu
+from loader import bot
+from utils import sql
 import time
-from Map import goto, enemy_write
+from work.Map import goto, enemy_write
 import random
 import numpy as np
 
-from Users import recovery_energy, recovery_health
+from work.Users import recovery_energy, recovery_health
 
 import os
 def find_location():

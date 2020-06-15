@@ -1,9 +1,9 @@
 from aiogram import types
-from texting import text_rename_nik, text_moving_win, text_moving_error, text_moving_busy, \
+from text.texting import text_rename_nik, text_moving_win, text_moving_error, text_moving_busy, \
     text_moving_heroes, text_rename_nik_new, text_shop_not_diamond
-from keyboard import keyboard_main_menu
+from keyboards.keyboard import keyboard_main_menu
 from aiogram.dispatcher.filters.state import State, StatesGroup
-import sql
+from utils import sql
 
 
 class Form(StatesGroup):
@@ -17,7 +17,7 @@ def keyboard_shop():
     rename = types.InlineKeyboardButton(text="Изменить имя 5 💎", callback_data="shop_rename")
     changeavatar = types.InlineKeyboardButton(text="Изменить аватар 5 💎", callback_data="shop_avatar")
     moving = types.InlineKeyboardButton(text="Перемещение 10 💎", callback_data="shop_moving")
-    sell = types.InlineKeyboardButton(text="Купить 💎", callback_data="shop_sell")
+    sell = types.InlineKeyboardButton(text="Купить 💎", callback_data="buy_sell")
     keyboard.add(rename)
     keyboard.add(changeavatar)
     keyboard.add(moving)

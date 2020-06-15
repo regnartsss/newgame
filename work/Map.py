@@ -1,18 +1,19 @@
 import random
-import sql
+from utils import sql
 import sqlite3
-import texting
-import keyboard
+from text import texting
+from keyboards import keyboard
 import time
-from load_all import dp, bot
+from loader import dp, bot
 from aiogram import types
 from datetime import datetime, timedelta
-from Users import recovery_move
-
+from work.Users import recovery_move
+from work.BattleCastle import castle_st
+import asyncio
 
 async def goto(call, message):
     pole = 100
-    # print(message.text)
+    print(message.text)
     if message.text in texting.list_Maps_goto or message.text[:3] == "/--" or message.text == "Ходите":
         await message.answer(text=texting.text_goto_maps, reply_markup=await keyboard_map(message))
     else:
@@ -35,13 +36,13 @@ async def goto(call, message):
             elif call.data == str(cell_user):
                 await bot.answer_callback_query(callback_query_id=call.id, text='Это вы')
             elif int(call.data) == int(cell_user) - 1:
-                await database(message, call.data, cell_user, value_call, -1)
+                await database(message, call, cell_user, value_call, -1)
             elif int(call.data) == int(cell_user) + 1:
-                await database(message, call.data, cell_user, value_call, +1)
+                await database(message, call, cell_user, value_call, +1)
             elif int(call.data) == int(cell_user) - pole:
-                await database(message, call.data, cell_user, value_call, - pole)
+                await database(message, call, cell_user, value_call, - pole)
             elif int(call.data) == int(cell_user) + pole:
-                await database(message, call.data, cell_user, value_call, + pole)
+                await database(message, call, cell_user, value_call, + pole)
             elif value_call == "null":
                 await bot.answer_callback_query(callback_query_id=call.id, text='Поле не активно')
             elif value_call == "iron":
@@ -151,27 +152,24 @@ UNION ALL \n"""
 
 
 async def database(message, call, cell_user, value_call, s):
-    # print(value_call)
+    print(value_call)
     if value_call == "iron" or value_call == "wood" or value_call == "stone":
         try:
             await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
         except Exception as n:
             print(n)
-        await mine(message, call)
+        await mine(message, call.data)
     # enemy
     elif value_call == "enemy":
         try:
             await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
         except Exception as n:
             print(n)
-        await enemy_write(message, call)
-    # elif value_call.split("_")[0] == "olduser":
-    #     print("olduser")
-    #     one = int(self.message_chat_id)
-    #     two = int(value_call.split("_")[1])
-    #     print(one)
-    #     print(two)
-    #     castle_st(one, two, self.call_id)
+        await enemy_write(message, call.data)
+    elif value_call.split("_")[0] == "user":
+        # one = int(message.chat.id)
+        two = (await sql.sql_selectone(f"SELECT id FROM maps WHERE maps_id = {call.data}"))[0]
+        await castle_st(call, two)
     else:
         request = f"""
 update heroes set cell = cell + {s} where user_id = {message.chat.id};
@@ -199,7 +197,7 @@ async def enemy_write(message, cell_r, mess=True):
     await sql.sql_insert(request % (message.chat.id, r, row_one[0], 5 * r, cell_r, row_one[1]))
     if mess is True:
         await message.answer(text=texting.text_ataka_enemy % (row_one[2], r, row_one[0]),
-                         reply_markup=keyboard.keyboard_battle())
+                             reply_markup=keyboard.keyboard_battle())
 
 
 async def mine(message, cell_mining):
@@ -264,12 +262,13 @@ async def timer_mining(message, data):
             await goto(call="*", message=message)
 
 
-def timer_start():
+async def timer_start():
     print("Запуск фарма")
     while True:
+        await asyncio.sleep(1)
         request = """select user_id, resource, cell, number from resource 
 Where time_stop <= strftime('%Y:%m:%d:%H:%M:%S','now','localtime')"""
-        rows = sql.sql_select_no_await(request)
+        rows = await sql.sql_select(request)
         for row in rows:
             print("Завершено")
             resource = row[1]
@@ -285,11 +284,11 @@ Where time_stop <= strftime('%Y:%m:%d:%H:%M:%S','now','localtime')"""
                      where user_id = {user_id};
                      Update maps set resource = 'null', lvl = 0, number=0, id=0 Where maps_id = {cell_r};
                    """
-            sql.sql_insertscript_no_await(request)
+            await sql.sql_insertscript(request)
             text = f"⚡️Вы завершили добычу ⚡️\nСобрано {number}"
             dp.loop.create_task(send(text, user_id))
-            time.sleep(1)
-        time.sleep(30)
+            await asyncio.sleep(1)
+        await asyncio.sleep(60)
 
 
 async def send(text, user_id):

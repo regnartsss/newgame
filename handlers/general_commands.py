@@ -1,13 +1,11 @@
 from aiogram import types
-from load_all import dp, bot
-from Users import search_user, db
-import sql
-import data
-import importlib
-from middleware_and_antiflood import rate_limit
+from loader import dp
+from work.Users import search_user, db
+from utils import sql
+import work
+# from middleware.middleware_and_antiflood import rate_limit
 
 # logging.basicConfig(level=logging.INFO)
-from aiogram.dispatcher.filters import BoundFilter
 
 # class MyFilter(BoundFilter):
 #     key = 'is_admin'
@@ -49,7 +47,7 @@ async def cmd_start(message: types.Message):
 
 
 @dp.message_handler(commands=['start'])
-@rate_limit(5, 'start')
+# @rate_limit(5, 'start')
 async def cmd_start(message: types.Message):
     if (await sql.sql_selectone("select start_bot from data"))[0] == 1:
         print("Бот остановлен")
@@ -72,7 +70,7 @@ async def check_referrals(message: types.Message):
 
 @dp.message_handler(commands=["stopbot"])
 async def stopbot(message: types.Message):
-    if message.chat.id in data.admin_id:
+    if message.chat.id in work.admin_id:
         await sql.sql_insert("Update data Set start_bot = 1")
         await message.answer("Бот остановлен")
     else:
@@ -81,7 +79,7 @@ async def stopbot(message: types.Message):
 
 @dp.message_handler(commands=["startbot"])
 async def stopbot(message: types.Message):
-    if message.chat.id in data.admin_id:
+    if message.chat.id in work.admin_id:
         await sql.sql_insert("Update data Set start_bot = 0")
         await message.answer("Бот запущен")
     else:
@@ -90,11 +88,13 @@ async def stopbot(message: types.Message):
 
 @dp.message_handler(commands=["reload"])
 async def stopbot(message: types.Message):
-    if message.chat.id in data.admin_id:
+    if message.chat.id in work.admin_id:
 
         await message.answer("Модули перезапущены")
     else:
         await message.answer("Ты не админ")
+
+
 
 
 # await message.answer("Обработчик команды /start")

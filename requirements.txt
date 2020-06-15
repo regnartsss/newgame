@@ -11,6 +11,7 @@ chardet==3.0.4
 hiredis==1.0.1
 idna==2.9
 multidict==4.7.6
+numpy==1.18.5
 pytz==2020.1
 schedule==0.6.0
 yarl==1.4.2

@@ -2,7 +2,7 @@ $ cat .gitignore
 __pycache__/
 venv/
 .idea/
-config.py
+data/config.py
 *.json
 *.db
 database.db

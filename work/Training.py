@@ -1,7 +1,7 @@
 from aiogram import types
-from load_all import dp, bot, benchmark
-from texting import text_training_castle, text_training_uplvl, text_training_numwar, text_training_castle_old
-import sql
+from loader import bot
+from text.texting import text_training_castle, text_training_uplvl, text_training_numwar, text_training_castle_old
+from utils import sql
 
 
 async def entry(message, call):

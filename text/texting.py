@@ -1,16 +1,16 @@
-import time
-import sql
+from utils import sql
 
-def benchmark(func):
-    global st
-
-    def wrapper(*args, **kwargs):
-        t = time.time()
-        res = func(*args, **kwargs)
-        print(func.__name__, time.time() - t)
-        return res
-
-    return wrapper
+#
+# def benchmark(func):
+#     global st
+#
+#     def wrapper(*args, **kwargs):
+#         t = time.time()
+#         res = func(*args, **kwargs)
+#         print(func.__name__, time.time() - t)
+#         return res
+#
+#     return wrapper
 
 
 button_heroes = "🤴🏻 Герой"
@@ -25,6 +25,7 @@ button_setting = "⚙ Настройки"
 button_back = "⬅ Назад"
 button_attack = "⚔ Атаковать"
 
+button_buy_cancel = "🚫 Отмена"
 
 button_mining = "⛏ Добыча"
 button_mining_ataka = "⚔ Пройти?"
@@ -154,8 +155,8 @@ button_goto_two = "🏃‍♂ Отступить"
 button_goto = "🏃‍♂ Сбежать"
 button_castle_escape = "🏃🏻‍♂ Отступить"
 button_castle_escape_field = "Покинуть поле боя"
-list_Maps_goto = [button_maps,  button_goto_two,button_mining_map, button_mining,button_goto,button_castle_escape, "/--", "⏱ Вывод карты ⏱"]
-list_Maps = [button_maps,button_goto_two,button_castle_escape,button_goto,"🗺 Вернуться на карту", '🗺 Карта']
+list_Maps_goto = [button_maps,  button_goto_two,button_mining_map, button_mining,button_goto,button_castle_escape, button_castle_escape_field,"/--", "⏱ Вывод карты ⏱"]
+list_Maps = [button_maps,button_goto_two,button_castle_escape,button_goto,button_castle_escape_field,"🗺 Вернуться на карту", '🗺 Карта']
 
 
 

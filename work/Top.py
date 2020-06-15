@@ -1,5 +1,5 @@
-import sql
-from texting import text_top_castle, text_top_heroes
+from utils import sql
+from text.texting import text_top_castle, text_top_heroes
 
 
 async def top_heroes(message):
