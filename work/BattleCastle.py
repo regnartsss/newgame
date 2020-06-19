@@ -211,7 +211,7 @@ class Castle():
                         await bot.answer_callback_query(callback_query_id=self.call_id, text=text)
                     else:
                         print("castle_pole_hit_2")
-                        print(castle["q"])
+                        print(self.castle["q"])
                         que = self.castle["que"]
                         print(f"que {que}")
                         try:
@@ -228,8 +228,8 @@ class Castle():
                                 print(f"move_2_except_except {move_2}")
                         self.n = int(self.castle["field"].index(move_2))
                         print(f"n {self.n}")
-                        print(castle["q"])
-                        print(castle["field"])
+                        print(self.castle["q"])
+                        print(self.castle["field"])
                         await self.castle_pole_step()
 
         except TypeError:
@@ -251,7 +251,8 @@ class Castle():
                 pass
             k += 1
         que = self.castle["que"]
-
+        print(f"castle_pole_step {self.castle['q']}")
+        print(f"castle_pole_step {self.castle['field']}")
         if self.castle["que"] == len(self.castle["q"]) - 1:
             move_1 = self.castle["q"][que]
             self.castle["que"] = -1
@@ -259,18 +260,24 @@ class Castle():
         else:
             move_1 = self.castle["q"][que]
             move_2 = self.castle["q"][que + 1]
+        print(f"castle_pole_step_2 {self.castle['q']}")
+        print(f"castle_pole_step_2 {self.castle['field']}")
         if await self.check_warrior() == False:
             return
         else:
             text_1, text_2 = "Бой начался", "Бой начался"
-            nn = self.castle["field"].index(move_1)
+
             if self.call_data == "step_break":
                 pass
             else:
+                nn = self.castle["field"].index(move_1)
                 self.castle["field"][n] = move_1
-                self.castle["field"][nn] = 0
+                if self.call_data.split("_")[0] != 'hit':
+                    self.castle["field"][nn] = 0
             self.castle["goto"] = move_2
             self.castle["que"] += 1
+            print(f"castle_pole_step_3 {self.castle['q']}")
+            print(f"castle_pole_step_3 {self.castle['field']}")
             await self.castle_edit_message(text_1, text_2, move_2)
 
     async def castle_pole_break(self):
@@ -363,7 +370,11 @@ class Castle():
 
     async def castle_keyboard_castle(self, move_2, warrior):
         print("castle_keyboard_castle")
+        print(f"castle_keyboard_castle_1 {self.castle['q']}")
+        print(f"castle_keyboard_castle_1 {self.castle['field']}")
         await castle_battle(self.castle)
+        print(f"castle_keyboard_castle_2 {self.castle['q']}")
+        print(f"castle_keyboard_castle_2 {self.castle['field']}")
         keyboard_one = InlineKeyboardMarkup()
         keyboard_two = InlineKeyboardMarkup()
         x, y, n, s = 0, 0, 0, 8
@@ -404,7 +415,9 @@ class Castle():
                 elif self.castle["field"][n] == "stable_two":
                     tab_one.append(InlineKeyboardButton("🐴", callback_data="hit_stable_two"))
                     tab_two.append(InlineKeyboardButton("🐴", callback_data="hit_stable_two"))
-
+                elif self.castle["field"][n] == 3:
+                    tab_one.append(InlineKeyboardButton("💥", callback_data="start_null"))
+                    tab_two.append(InlineKeyboardButton("💥", callback_data="hit_tower_two"))
                 elif self.castle["field"][n] == 1 and move_2 in one:
                     tab_one.append(InlineKeyboardButton("✳", callback_data="step_%s" % n))
                     tab_two.append(InlineKeyboardButton(" ", callback_data="l_%s" % n))
@@ -414,9 +427,7 @@ class Castle():
                 elif self.castle["field"][n] == "tower_two":
                     tab_one.append(InlineKeyboardButton("⛩", callback_data="step_null"))
                     tab_two.append(InlineKeyboardButton("⛩", callback_data="l_%s"))
-                elif self.castle["field"][n] == 3:
-                    tab_one.append(InlineKeyboardButton("💣", callback_data="start_null"))
-                    tab_two.append(InlineKeyboardButton("💣", callback_data="hit_tower_two"))
+
 
                 # elif key["field"][n] == 3 and str(call.message.chat.id) == str(key["user_two"]):
                 #     tab_one.append(InlineKeyboardButton("🗡", callback_data="start_null"))
@@ -530,6 +541,8 @@ async def castle_battle(key):
         await castle_calculation(key, "stable_two")
     elif key["goto"] == "tower_two":
         await castle_calculation(key, "tower_two")
+    print(key['q'])
+    print(key['field'])
 
 async def castle_calculation(key, data):
     print("castle_calculation")
