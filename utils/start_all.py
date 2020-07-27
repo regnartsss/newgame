@@ -1,11 +1,11 @@
 import threading
-import schedule
 import time
 from work.Map import timer_start
 from utils import sql
 from datetime import datetime
 from work.Users import start_user_default
 import asyncio
+
 
 async def schedule_farm():
     print("farm")
@@ -34,12 +34,13 @@ async def schedule_farm():
             for row in rows:
                 consumption += row[0] * row[1]
             num_farm = production * ss - consumption
-            food +=num_farm
+            food += num_farm
             if food < 0:
                 update = (f"update resource set food = 0, farm_timer = '{farm_time_old}' where user_id = {user_id}")
                 await sql.sql_insert(update)
             else:
-                update = (f"update resource set food = {food}, farm_timer = '{farm_time_old}' where user_id = {user_id}")
+                update = (
+                    f"update resource set food = {food}, farm_timer = '{farm_time_old}' where user_id = {user_id}")
                 await sql.sql_insert(update)
         # if num_farm <= 0:
         #     update = ("update resource set food = food - %s, farm_timer = '%s' "
@@ -73,7 +74,12 @@ async def schedule_farm():
 
 
 async def all():
-    loop = asyncio.get_event_loop()
+    # await timer_start()
+    # loop = asyncio.get_event_loop()
+    # loop.run_until_complete(timer_start())
+    # loop.run_until_complete(start_user_default())
+    # loop.run_until_complete(schedule_farm())
+
     asyncio.ensure_future(timer_start())
     asyncio.ensure_future(start_user_default())
     asyncio.ensure_future(schedule_farm())
@@ -83,5 +89,3 @@ async def all():
     # await schedule_farm()
     # threading.Thread(target=timer_start).start()
     # threading.Thread(target=farm_timer).start()
-
-

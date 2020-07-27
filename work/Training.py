@@ -4,40 +4,41 @@ from text.texting import text_training_castle, text_training_uplvl, text_trainin
 from utils import sql
 
 
-async def entry(message, call):
-    if call.data.split("_")[0] == "training":
-        old = call.data.split("_")[1]
-        lvl = call.data.split("_")[2]
-        status = call.data.split("_")[3]
-        if status == "⛔":
-            await bot.answer_callback_query(callback_query_id=call.id, text=text_training_uplvl)
-        else:
-            text = await text_training(call) + text_training_numwar
-            try:
-                await call.message.edit_text(text=text, reply_markup=await keyboard_training_one(call))
-            except Exception as n:
-                print(f"ERROR_1 {n}")
-
-    elif call.data.split("_")[0] == "entry":
-        text = await text_training(call) + "\n Выберите уровень войск"
+async def training(call):
+    old = call.data.split("_")[1]
+    lvl = call.data.split("_")[2]
+    status = call.data.split("_")[3]
+    if status == "⛔":
+        await bot.answer_callback_query(callback_query_id=call.id, text=text_training_uplvl)
+    else:
+        text = await text_training(call) + text_training_numwar
         try:
-            await call.message.edit_text(text=text, reply_markup=await keyboard_training_lvl(call))
+            await call.message.edit_text(text=text, reply_markup=await keyboard_training_one(call))
         except Exception as n:
-            print(f"ERROR_2 {n}")
+            print(f"ERROR_1 {n}")
 
-    elif call.data.split("_")[0] == "train":
-        name = call.data.split("_")[1]
-        lvl = call.data.split("_")[2]
-        number = int(call.data.split("_")[3])
-        status = call.data.split("_")[4]
-        if status == "✅":
-            request = f"SELECT wood, stone, iron, food FROM training Where name = '{name}' and lvl = {lvl}"
-            wood, stone, iron, food = await sql.sql_selectone(request)
-            wood *= number
-            stone *= number
-            iron *= number
-            food *= number
-            request = f"""UPDATE resource SET wood = wood - {wood}, 
+
+async def entry(call):
+    text = await text_training(call) + "\n Выберите уровень войск"
+    try:
+        await call.message.edit_text(text=text, reply_markup=await keyboard_training_lvl(call))
+    except Exception as n:
+        print(f"ERROR_2 {n}")
+
+
+async def train(call):
+    name = call.data.split("_")[1]
+    lvl = call.data.split("_")[2]
+    number = int(call.data.split("_")[3])
+    status = call.data.split("_")[4]
+    if status == "✅":
+        request = f"SELECT wood, stone, iron, food FROM training Where name = '{name}' and lvl = {lvl}"
+        wood, stone, iron, food = await sql.sql_selectone(request)
+        wood *= number
+        stone *= number
+        iron *= number
+        food *= number
+        request = f"""UPDATE resource SET wood = wood - {wood}, 
                                               stone = stone - {stone}, 
                                               iron = iron - {iron}, 
                                               food = food - {food}
@@ -45,29 +46,28 @@ async def entry(message, call):
                         UPDATE warrior SET {name} = {name} + {number} 
                             WHERE user_id = {call.message.chat.id} and lvl = {lvl}"""
 
-            await sql.sql_insertscript(request)
-            await bot.answer_callback_query(callback_query_id=call.id, text="Обучение успешно")
-            await call.message.edit_text(text=await text_training(call), reply_markup=await keyboard_training_one(call))
-        else:
-            await bot.answer_callback_query(callback_query_id=call.id, text="Не хватает ресурсов")
+        await sql.sql_insertscript(request)
+        await bot.answer_callback_query(callback_query_id=call.id, text="Обучение успешно")
+        await call.message.edit_text(text=await text_training(call), reply_markup=await keyboard_training_one(call))
+    else:
+        await bot.answer_callback_query(callback_query_id=call.id, text="Не хватает ресурсов")
+
 
 async def keyboard_training_one(call):
-    print(call.data)
     name = call.data.split("_")[1]
     lvl = call.data.split("_")[2]
     keyboard = types.InlineKeyboardMarkup()
     number = [5, 10, 25, 50]
     request = f"SELECT avatar, wood, stone, iron, food, consumption FROM training Where name = '{name}' and lvl = {lvl}"
-    print(request)
     row = await sql.sql_selectone(request)
     for i in number:
-        lvl_heroes = (await sql.sql_selectone(f"Select lvlheroes FROM heroes WHERE user_id = {call.message.chat.id}"))[0]
+        lvl_heroes = (await sql.sql_selectone(f"Select lvlheroes FROM heroes WHERE user_id = {call.message.chat.id}"))[
+            0]
         num = lvl_heroes * i
         row_user = await sql.sql_selectone(
             f"SELECT wood, stone, iron, food FROM resource WHERE user_id = {call.message.chat.id}")
-        print(row)
-        print(row_user)
-        if row[1]*num > row_user[0] or row[2]*num > row_user[1] or row[3]*num > row_user[2] or row[4]*num > row_user[3]:
+        if row[1] * num > row_user[0] or row[2] * num > row_user[1] or row[3] * num > row_user[2] or row[4] * num > \
+                row_user[3]:
             status = "⛔"
         else:
             status = "✅"
@@ -87,7 +87,7 @@ def number_thousand(num):
     if num < 1000:
         return f"{num} "
     else:
-        return f"{int(num/1000)}т. "
+        return f"{int(num / 1000)}т. "
 
 
 async def keyboard_training_lvl(call):
@@ -96,7 +96,6 @@ async def keyboard_training_lvl(call):
     # number = [1, 2, 3, 4, 5]
     request = f"SELECT avatar, wood, stone, iron, food, consumption FROM training Where name = '{name}'"
     building = (await sql.sql_selectone(f"SELECT {name} FROM heroes Where user_id = '{call.message.chat.id}'"))[0]
-    print(building)
     rows = await sql.sql_select(request)
     i = 1
     for row in rows:

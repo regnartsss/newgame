@@ -3,14 +3,16 @@ from loader import dp, bot
 from aiogram.dispatcher import FSMContext
 from utils import sql
 from text import texting
+from text.buy import textsell
 from keyboards import keyboard
 from work import Fight, Shop, Top
 from work import Build, Map, Users, Training
 from data.config import admins
 import importlib
-from middlewares.middleware_and_antiflood import rate_limit
 from work.BattleCastle import Castle
-from work.Buy import function_buy, Buy
+from work.Buy import function_buy, Buy, buy_qiwi, buy_amount
+from work.Map import new_maps
+from utils.sql import sql_insert
 
 
 
@@ -56,31 +58,63 @@ async def process_name(message: types.Message, state: FSMContext):
     await function_buy(message, state)
 
 
+@dp.message_handler(text=texting.button_heroes)
+# @rate_limit(0.5)
+async def info(message: types.Message):
+    await message.answer(text=await Users.info_heroes(message))
 
+
+@dp.message_handler(text=texting.button_mining)
+async def star(message: types.Message):
+    await Map.timer_mining(message, "start")
+    await message.answer(text=texting.text_mining_start, reply_markup=keyboard.keyboard_map())
+
+
+@dp.message_handler(text=texting.button_mining_map)
+async def stop(message: types.Message):
+    text = await Map.timer_mining(message, "stop")
+    await message.answer(text=text, reply_markup=keyboard.keyboardmap())
+    await Map.goto(call="*", message=message)
+
+
+@dp.message_handler(text=texting.button_castle)
+async def stop(message: types.Message):
+    await message.answer(text="🏘 Домой", reply_markup=keyboard.keyboard_main_menu())
+
+
+@dp.message_handler(text=texting.button_mining_ataka)
+async def stop(message: types.Message):
+    await message.answer(text=texting.text_mining_ataka, reply_markup=keyboard.keyboard_map())
+    await Fight.mining_attack(message)
+
+
+@dp.message_handler(text=texting.button_building)
+async def stop(message: types.Message):
+    await sql_insert(f"update heroes set message_id = {message.from_user.id+1} where user_id = {message.from_user.id}")
+    await Build.building(message=message)
+    await message.answer(text=texting.text_building_update % (await Users.info_heroes(message, key="build")),
+                         reply_markup=await Build.keyboard_building(message))
 
 
 @dp.message_handler(content_types=types.ContentTypes.TEXT)
-@rate_limit(0.5)
 async def all_other_messages(message: types.Message):
     if message.chat.id in admins:
         if message.text == "reload":
             await reload_module()
             await message.answer("Модули обновлены")
-
-
     if "f" == 1:
         pass
         # print("Бот остановлен")
         # await message.answer("Бот временно остановлен")
     else:
         data_old = await sql.sql_selectone("select message_id from heroes where user_id = %s" % message.chat.id)
-        if data_old[0] != 0:
-            try:
-                print("Надо удалить")
-                await bot.delete_message(message.chat.id, data_old[0])
-            except Exception as n:
-                print("Не чего удалять %s" % n)
-            await sql.sql_insert("update heroes set message_id = 0 where user_id = %s" % message.chat.id)
+        # if data_old[0] != 0:
+        #     try:
+        #         print("Надо удалить")
+        #         await bot.delete_message(message.chat.id, data_old[0])
+        #     except Exception as n:
+        #         print("Не чего удалять %s" % n)
+        #     await sql.sql_insert("update heroes set message_id = 0 where user_id = %s" % message.chat.id)
 
         if message.text in texting.list_Maps:
             await sql.sql_insert(
@@ -96,8 +130,8 @@ async def all_other_messages(message: types.Message):
                                        reply_markup=keyboard.keyboardmap())
                 await Map.goto(message=message, call=" ")
             # Вернуться на карту
-            elif message.text == texting.button_mining_map:
-                await Map.timer_mining(message, "stop")
+            # elif message.text == texting.button_mining_map:
+            #     await Map.timer_mining(message, "stop")
             elif message.text == texting.button_castle_escape or message.text == texting.button_castle_escape_field:
                  print("asdasd")
                  await Castle(message=message, call="").castle_escape()
@@ -116,33 +150,33 @@ async def all_other_messages(message: types.Message):
                                        reply_markup=keyboard.keyboardmap())
                 await Map.goto(message=message, call=" ")
         # Домой
-        elif message.text == texting.button_castle:
-            await bot.send_message(text="🏘 Домой", chat_id=message.chat.id, reply_markup=keyboard.keyboard_main_menu())
+        # elif message.text == texting.button_castle:
+        #     await bot.send_message(text="🏘 Домой", chat_id=message.chat.id, reply_markup=keyboard.keyboard_main_menu())
         # Копать
-        elif message.text == texting.button_mining:
-            await Map.timer_mining(message, "start")
+        # elif message.text == texting.button_mining:
+        #     await Map.timer_mining(message, "start")
 
-        elif message.text == texting.button_mining_ataka:
-            await message.answer(text=texting.text_mining_ataka, reply_markup=keyboard.keyboard_map())
-            await Fight.mining_attack(message)
+        # elif message.text == texting.button_mining_ataka:
+        #     await message.answer(text=texting.text_mining_ataka, reply_markup=keyboard.keyboard_map())
+        #     await Fight.mining_attack(message)
         # Назад
         elif message.text == texting.button_back:
             await bot.send_message(text=texting.button_back, chat_id=message.chat.id,
                                    reply_markup=keyboard.keyboard_main_menu())
         # Инфо герой
-        elif message.text == texting.button_heroes:
-            await Users.info_heroes(message)
+        # elif message.text == texting.button_heroes:
+        #     await Users.info_heroes(message)
             # await message.answer(text=Users.info_heroes(message, key))
             # await message.answer(text=Users.info_heroes(message, key="build"))
         # Атаковать
         elif message.text == texting.button_attack:
             await Fight.fight(message=message, call='')
         # Cтроение
-        elif message.text == texting.button_building:
-            menu = "building"
-            await sql.sql_insert(
-                "update heroes set message_id = %s where user_id = %s" % (message.message_id + 1, message.chat.id))
-            await Build.building(message=message)
+        # elif message.text == texting.button_building:
+        #     menu = "building"
+        #     await sql.sql_insert(
+        #         "update heroes set message_id = %s where user_id = %s" % (message.message_id + 1, message.chat.id))
+        #     await Build.building(message=message)
         elif message.text == texting.button_setting:
             menu = "info"
             await bot.send_message(text=texting.text_setting, chat_id=message.chat.id,
@@ -155,11 +189,17 @@ async def all_other_messages(message: types.Message):
             # bot.register_next_step_handler(message, please)
         elif message.text == "Помочь проекту":
             menu = "feedback"
-            await bot.send_message(text="Выберите платежную систему", chat_id=message.chat.id,
-                                   reply_markup=keyboard.keyboard_buy())
+            await message.answer(text="Выберите платежную систему", reply_markup=keyboard.keyboard_buy())
         # elif message.text == "Tranzzo":
         #     menu = "Tranzzo"
         #     buy.buy_amount(message)
+        elif message.text == "QIWI":
+            await message.answer(textsell, reply_markup=keyboard.keyboard_buy_cancel())
+            await Buy.amount.set()
+            # await buy_amount(message)
+            # await message.answer(text="Для оплаты перейдите по ссылке", reply_markup=await buy_qiwi(message))
+        elif message.text == texting.button_buy_cancel:
+            await message.answer(texting.button_buy_cancel, reply_markup=keyboard.keyboard_main_menu())
         elif message.text == texting.button_start:
             await Users.start_user_name(message)
         elif message.text == "💬 Чат":
@@ -191,15 +231,13 @@ async def all_other_messages(message: types.Message):
             await message.answer(text="Для подробной информации о товаре, нажмите на него",
                                  reply_markup=Shop.keyboard_shop())
         elif message.text == "Создать карту":
-            await Map.new_maps()
+            await message.answer(text=await new_maps())
         elif message.text == texting.button_top:
             await message.answer(text=texting.button_top, reply_markup=keyboard.keyboard_statisctick())
         elif message.text == texting.button_top_heroes:
             await message.answer(text=await Top.top_heroes(message))
         elif message.text == texting.button_top_castle:
             await message.answer(text=await Top.top_castle(message))
-
-        #
         elif message.text == texting.button_castle_attack:
             await sql.sql_insert(
                 "update heroes set message_id = %s where user_id = %s" % (message.message_id + 3, message.chat.id))

@@ -6,9 +6,9 @@ from work.Users import info_heroes
 
 
 async def building(message):
-    if message.text == button_building:
-        await message.answer(text=text_building_update % (await info_heroes(message, key="build")), reply_markup=await keyboard_building(message))
-    else:
+    # if message.text == button_building:
+    #     await message.answer(text=text_building_update % (await info_heroes(message, key="build")), reply_markup=await keyboard_building(message))
+    # else:
         try:
             await message.edit_text(
                 text=text_building_update % (await info_heroes(message, key="build")), reply_markup=await keyboard_building(message))

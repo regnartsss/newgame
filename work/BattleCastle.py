@@ -1,17 +1,10 @@
 import random
 from loader import bot
-# from data import training
-import threading
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-import os
-import json
 from text import texting
 from keyboards import keyboard
 from utils.sql import sql_select, sql_selectone, sql_insert
 import asyncio
-# def find_location():
-#     return os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))).replace('\\', '/') + '/'
-# PATH = find_location()
 
 global castle
 
@@ -23,15 +16,24 @@ async def castle_st(call, two):
         castle[f"{user_id}_{two}"] = {}
     except NameError:
         castle = {}
-    data = await castle_start(user_id, two)
+    data, lvl_diff = await castle_start(user_id, two)
+    print(lvl_diff)
+    text = ''
+    if lvl_diff == 0:
+        text = "\nЗа победу вы получите 2 очка чести."
+    elif lvl_diff <= 1:
+        text = "\nВаш уровень ниже соперника. \nЗа победу получите 3 очка чести"
+    elif lvl_diff >= 1:
+        text = "\nВаш уровень намного выше соперника. \nЗа победу вы получите 1 очко чести"
     try:
         if data[:16] == "У вас нет воинов" or data[:16] == "У соперника нет ":
             await call.message.answer(text=data)
-    except Exception as n:
+    except TypeError:
         castle[f"{user_id}_{two}"] = data
+        nik_name = (await sql_selectone(f"SELECT nik_name FROM heroes WHERE user_id = {two}"))[0]
         await bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-        await call.message.answer(text=texting.text_ataka_castle % "nik_name", reply_markup=keyboard.keyboard_castle())
-        # await save_castle()
+        await call.message.answer(text=texting.text_ataka_castle % f"{nik_name} {text}",
+                                  reply_markup=keyboard.keyboard_castle())
 
 
 async def castle_start(one, two):
@@ -43,12 +45,13 @@ async def castle_start(one, two):
             lvl_castle_one = row[1]
         elif row[0] == two:
             lvl_castle_two = row[1]
+    lvl_diff = lvl_castle_one - lvl_castle_two
     if lvl_castle_one >= lvl_castle_two:
         lvl_castle = await castle_start_lvl(lvl_castle_two)
-        return await castle_start_queue(one, two, lvl_castle)
+        return await castle_start_queue(one, two, lvl_castle), lvl_diff
     elif lvl_castle_one <= lvl_castle_two:
         lvl_castle = await castle_start_lvl(lvl_castle_one)
-        return await castle_start_queue(one, two, lvl_castle)
+        return await castle_start_queue(one, two, lvl_castle), lvl_diff
 
 
 async def castle_start_lvl(lvl_castle):
@@ -66,7 +69,7 @@ async def castle_start_lvl(lvl_castle):
 
 async def castle_start_queue(one, two, lvl_war):
     warrior = {}
-    data = {}
+    # data = {}
     one_war = await sql_selectone(
         f"SELECT barracks, stable, shooting FROM warrior WHERE user_id = {one} and lvl = {lvl_war}")
     two_war = await sql_selectone(
@@ -87,20 +90,19 @@ async def castle_start_queue(one, two, lvl_war):
         else:
             queue["q_two"].append(key[0])
 
-    if queue["q_one"] == []:
+    if queue["q_one"] is []:
         return "У вас нет воинов %s уровня" % lvl_war
-    if queue["q_two"] == []:
+    if queue["q_two"] is []:
         return "У соперника нет воинов %s уровня" % lvl_war
     i = 0
     while i < 3:
         try:
             queue["q"].append("%s_one" % queue["q_one"][i])
-        except:
+        except IndexError:
             pass
-
         try:
             queue["q"].append("%s_two" % queue["q_two"][i])
-        except:
+        except IndexError:
             pass
         i += 1
     queue.pop("q_one")
@@ -137,16 +139,14 @@ class Castle():
         except NameError:
             pass
 
-
     def search_castle(self):
-
         for key, value in castle.items():
             if str(self.user_id) == key.split("_")[0]:
                 return key
             elif str(self.user_id) == key.split("_")[1]:
                 return key
 
-    async def castle_pole(self, pos=""):
+    async def castle_pole(self):
         if self.text == texting.button_castle_attack:
             self.castle["field_one"] = [0 for i in range(0, 64)]
             self.castle["field_two"] = [0 for i in range(0, 64)]
@@ -158,7 +158,7 @@ class Castle():
                                    reply_markup=keyboard.keyboard_castle_escape_field())
             await bot.send_message(text="----->", chat_id=self.castle["user_one"], reply_markup=keyboard_one)
             await bot.send_message(text="<-----", chat_id=self.castle["user_two"], reply_markup=keyboard_two)
-            await self.timer("start")
+            await self.timer()
 
     async def castle_pole_timer(self):
         if self.user_id == self.castle["user_one"]:
@@ -169,6 +169,7 @@ class Castle():
             self.castle["start_two"] = -1
             self.castle["chat_id_two"] = self.message_id
             await self.call.message.edit_text("Ожидайте второго игрока", reply_markup=await self.keyboard_check())
+
         if self.castle["start_one"] == -1 and self.castle["start_two"] == -1:
             self.castle["start_one"] = 0
             self.castle["start_two"] = 0
@@ -185,55 +186,57 @@ class Castle():
 
     async def castle_pole_hit(self):
         print("castle_pole_hit")
-        try:
-            if self.call_data.split("_")[2] == "one" and self.castle["user_one"] == self.user_id:
-                text = "Ячейка занята твоими войсками"
-                await bot.answer_callback_query(callback_query_id=self.call_id, text=text)
-            elif self.call_data.split("_")[2] == "two" and self.castle["user_two"] == self.user_id:
-                text = "Ячейка занята твоими войсками"
-                await bot.answer_callback_query(callback_query_id=self.call_id, text=text)
+        if self.call_data == "hit_tower_two":
+            text = "Атакуйте врага башней или пропустите ход"
+            await bot.answer_callback_query(callback_query_id=self.call_id, text=text)
+        elif self.call_data == "hit_tower_one":
+            text = "Стреляет башня защитника"
+            await bot.answer_callback_query(callback_query_id=self.call_id, text=text)
+        elif self.call_data.split("_")[2] == "one" and self.castle["user_one"] == self.user_id:
+            text = "Ячейка занята твоими войсками"
+            await bot.answer_callback_query(callback_query_id=self.call_id, text=text)
+        elif self.call_data.split("_")[2] == "two" and self.castle["user_two"] == self.user_id:
+            text = "Ячейка занята твоими войсками"
+            await bot.answer_callback_query(callback_query_id=self.call_id, text=text)
+        else:
+            print("castle_pole_hit_удар_соперника")
+            move_all = self.call_data.split("_")[2]
+            print(move_all)
+            move_q = self.castle["que"]
+            print(move_q)
+            move_1 = self.castle["q"][move_q]
+            print(move_1)
+            go_move_1 = move_1.split("_")[1]
+            print(go_move_1)
+            if go_move_1 == move_all:
+                print("Ожидайте, ходит соперник")
             else:
-                print("castle_pole_hit_удар_соперника")
-                move_all = self.call_data.split("_")[2]
-                print(move_all)
-                move_q = self.castle["que"]
-                print(move_q)
-                move_1 = self.castle["q"][move_q]
-                print(move_1)
-                go_move_1 = move_1.split("_")[1]
-                print(go_move_1)
-                if go_move_1 == move_all:
-                    print("Ожидайте, ходит соперник")
+                hit = "%s_%s" % (self.call_data.split("_")[1], self.call_data.split("_")[2])
+                if await castle_hit(self.castle, move_1, hit) is False:
+                    text = "Вы слишком далеко"
+                    await bot.answer_callback_query(callback_query_id=self.call_id, text=text)
                 else:
-                    hit = "%s_%s" % (self.call_data.split("_")[1], self.call_data.split("_")[2])
-                    if await castle_hit(self.castle, move_1, hit) == False:
-                        text = "Вы слишком далеко"
-                        await bot.answer_callback_query(callback_query_id=self.call_id, text=text)
-                    else:
-                        print("castle_pole_hit_2")
-                        print(self.castle["q"])
-                        que = self.castle["que"]
-                        print(f"que {que}")
+                    print("castle_pole_hit_2")
+                    print(self.castle["q"])
+                    que = self.castle["que"]
+                    print(f"que {que}")
+                    try:
+                        move_2 = self.castle["q"][que]
+                        print(f"move_2_try {move_2}")
+                    except IndexError:
                         try:
-                            move_2 = self.castle["q"][que]
-                            print(f"move_2_try {move_2}")
+                            move_2 = self.castle["q"][que + 1]
+                            print(f"move_2_except_try {move_2}")
                         except IndexError:
-                            try:
-                                move_2 = self.castle["q"][que + 1]
-                                print(f"move_2_except_try {move_2}")
-                            except IndexError:
-                                self.castle["que"] = 0
-                                print(f"self.castle {self.castle['que']}")
-                                move_2 = self.castle["q"][0]
-                                print(f"move_2_except_except {move_2}")
-                        self.n = int(self.castle["field"].index(move_2))
-                        print(f"n {self.n}")
-                        print(self.castle["q"])
-                        print(self.castle["field"])
-                        await self.castle_pole_step()
-
-        except TypeError:
-            print("castle_pole_hit_IndexError_3")
+                            self.castle["que"] = 0
+                            print(f"self.castle {self.castle['que']}")
+                            move_2 = self.castle["q"][0]
+                            print(f"move_2_except_except {move_2}")
+                    self.n = int(self.castle["field"].index(move_2))
+                    print(f"n {self.n}")
+                    print(self.castle["q"])
+                    print(self.castle["field"])
+                    await self.castle_pole_step()
 
     async def castle_pole_step(self):
         print("castle_pole_step")
@@ -262,11 +265,11 @@ class Castle():
             move_2 = self.castle["q"][que + 1]
         print(f"castle_pole_step_2 {self.castle['q']}")
         print(f"castle_pole_step_2 {self.castle['field']}")
-        if await self.check_warrior() == False:
-            return
-        else:
-            text_1, text_2 = "Бой начался", "Бой начался"
-
+        data = await self.check_warrior()
+        if data is False:
+        #     pass
+        # else:
+            text_1, text_2 = await text_message(move_2)
             if self.call_data == "step_break":
                 pass
             else:
@@ -292,37 +295,50 @@ class Castle():
         check = []
         for t in self.castle["q"]:
             check.append(t.split("_")[1])
-        if "one" in check:
-            pass
-        else:
+
+        q_one = check.count("one")
+        q_two = check.count("two")
+        print(q_one, q_two)
+        if q_one < 1:
+            print("первый проиграл")
+            # for t in self.castle["q"]:
+            #     check.append(t.split("_")[1])
+            #     print(check)
+            # if "one" in check[0]:
+            #     pass
+            # else:
             text_one = "Вы проиграли, вы убили %s юнитов" % self.castle["dead_one"]
             text_two = "Вы победили, вы убили %s юнитов" % self.castle["dead_two"]
-            bot.send_message(chat_id=self.castle["user_one"], text=text_one,
+
+            await bot.send_message(chat_id=self.castle["user_one"], text=text_one,
                              reply_markup=keyboard.keyboard_main_menu())
-            bot.send_message(chat_id=self.castle["user_two"], text=text_two,
+            await bot.send_message(chat_id=self.castle["user_two"], text=text_two,
                              reply_markup=keyboard.keyboard_main_menu())
             try:
-                bot.delete_message(chat_id=self.castle["user_one"], message_id=self.castle["chat_id_one"])
-                bot.delete_message(chat_id=self.castle["user_two"], message_id=self.castle["chat_id_two"])
+                await bot.delete_message(chat_id=self.castle["user_one"], message_id=self.castle["chat_id_one"])
+                await bot.delete_message(chat_id=self.castle["user_two"], message_id=self.castle["chat_id_two"])
             except Exception as n:
                 print("Error_castle_escape_field_1_%s" % n)
             self.all_castle.pop(self.key)
-            return False
-        if "two" in check:
-            pass
-        else:
+        elif q_two < 2:
+            print("Второй проиграл")
+            # if "two" in check[0]:
+            #     pass
+            # else:
             text_two = "Вы проиграли, вы убили %s юнитов" % self.castle["dead_two"]
             text_one = "Вы победили, вы убили %s юнитов" % self.castle["dead_one"]
-            bot.send_message(chat_id=self.castle["user_one"], text=text_one,
+            await bot.send_message(chat_id=self.castle["user_one"], text=text_one,
                              reply_markup=keyboard.keyboard_main_menu())
-            bot.send_message(chat_id=self.castle["user_two"], text=text_two,
+            await bot.send_message(chat_id=self.castle["user_two"], text=text_two,
                              reply_markup=keyboard.keyboard_main_menu())
             try:
-                bot.delete_message(chat_id=self.castle["user_one"], message_id=self.castle["chat_id_one"])
-                bot.delete_message(chat_id=self.castle["user_two"], message_id=self.castle["chat_id_two"])
+                await bot.delete_message(chat_id=self.castle["user_one"], message_id=self.castle["chat_id_one"])
+                await bot.delete_message(chat_id=self.castle["user_two"], message_id=self.castle["chat_id_two"])
             except Exception as n:
                 print("Error_castle_escape_field_2_%s" % n)
             self.all_castle.pop(self.key)
+        else:
+            print("false")
             return False
 
     async def castle_escape(self):
@@ -337,6 +353,7 @@ class Castle():
     def castle_keyboard_start(self):
         keyboard_one = InlineKeyboardMarkup()
         keyboard_two = InlineKeyboardMarkup()
+        print(self.castle)
         keyboard_one.row(InlineKeyboardButton("Подтвердить", callback_data=f"castle_auto_{self.castle['user_one']}"))
         keyboard_one.row(InlineKeyboardButton("Отказаться", callback_data=f"castle_manual_{self.castle['user_one']}"))
         keyboard_two.row(InlineKeyboardButton("Подтвердить", callback_data=f"castle_auto_{self.castle['user_two']}"))
@@ -345,30 +362,30 @@ class Castle():
 
     async def castle_edit_message(self, text_1, text_2, move_2):
         print("castle_edit_message")
-        keyboard_one, keyboard_two = await self.castle_keyboard_castle(move_2, "warrior")
+        keyboard_one, keyboard_two = await self.castle_keyboard_castle(move_2)
         await bot.edit_message_text(text=text_1, message_id=self.castle["chat_id_one"],
                                     chat_id=self.castle["user_one"], reply_markup=keyboard_one)
         await bot.edit_message_text(text=text_2, message_id=self.castle["chat_id_two"],
                                     chat_id=self.castle["user_two"], reply_markup=keyboard_two)
 
-    async def timer(self, status="null"):
+    async def timer(self):
         await asyncio.sleep(30)
         if self.castle["start_one"] == -2:
             print("Вы не подтердили участия")
-            # await bot.send_message(text="Второй игрок не подтвердил своё участие\n",
-            #                        chat_id=self.castle["user_one"])
-            # await bot.send_message(text="Бой закончен\n", chat_id=self.castle["user_two"],
-            #                        reply_markup=keyboard.keyboard_main_menu())
-            # await self.castle_escape()
+            await bot.send_message(text="Соперник не подтвердил своё участие\n",
+                                   chat_id=self.castle["user_two"], reply_markup=keyboard.keyboard_main_menu())
+            await bot.send_message(text="Вы не подтвердили своё участие\n", chat_id=self.castle["user_one"],
+                                   reply_markup=keyboard.keyboard_main_menu())
+            self.all_castle.pop(self.key)
         if self.castle["start_two"] == -2:
             print("Второй игрок не подтердил участия")
-            # await bot.send_message(text="Второй игрок не подтвердил своё участие\n",
-            #                        chat_id=self.castle["user_two"])
-            # await bot.send_message(text="Бой закончен\n", chat_id=self.castle["user_one"],
-            #                        reply_markup=keyboard.keyboard_main_menu())
-            # await self.castle_escape()
+            await bot.send_message(text="Соперник не подтвердил своё участие\n",
+                                   chat_id=self.castle["user_one"], reply_markup=keyboard.keyboard_main_menu())
+            await bot.send_message(text="Вы не подтвердили своё участие\n", chat_id=self.castle["user_two"],
+                                   reply_markup=keyboard.keyboard_main_menu())
+            self.all_castle.pop(self.key)
 
-    async def castle_keyboard_castle(self, move_2, warrior):
+    async def castle_keyboard_castle(self, move_2):
         print("castle_keyboard_castle")
         print(f"castle_keyboard_castle_1 {self.castle['q']}")
         print(f"castle_keyboard_castle_1 {self.castle['field']}")
@@ -416,7 +433,7 @@ class Castle():
                     tab_one.append(InlineKeyboardButton("🐴", callback_data="hit_stable_two"))
                     tab_two.append(InlineKeyboardButton("🐴", callback_data="hit_stable_two"))
                 elif self.castle["field"][n] == 3:
-                    tab_one.append(InlineKeyboardButton("💥", callback_data="start_null"))
+                    tab_one.append(InlineKeyboardButton("💥", callback_data="hit_tower_one"))
                     tab_two.append(InlineKeyboardButton("💥", callback_data="hit_tower_two"))
                 elif self.castle["field"][n] == 1 and move_2 in one:
                     tab_one.append(InlineKeyboardButton("✳", callback_data="step_%s" % n))
@@ -427,12 +444,9 @@ class Castle():
                 elif self.castle["field"][n] == "tower_two":
                     tab_one.append(InlineKeyboardButton("⛩", callback_data="step_null"))
                     tab_two.append(InlineKeyboardButton("⛩", callback_data="l_%s"))
-
-
                 # elif key["field"][n] == 3 and str(call.message.chat.id) == str(key["user_two"]):
                 #     tab_one.append(InlineKeyboardButton("🗡", callback_data="start_null"))
                 #     tab_two.append(InlineKeyboardButton(" ", callback_data="start_null"))
-
                 else:
                     tab_one.append(InlineKeyboardButton(" ", callback_data="step_field"))
                     tab_two.append(InlineKeyboardButton(" ", callback_data="step_field"))
@@ -452,6 +466,7 @@ class Castle():
             keyboard_two.row(InlineKeyboardButton("Пропустить ход", callback_data="step_break"))
             keyboard_one.row(InlineKeyboardButton("Ход соперника", callback_data="step_null"))
         return keyboard_one, keyboard_two
+
     #         elif self.call_data == "start_busy":
     #             bot.answer_callback_query(callback_query_id=self.call_id, text="Поле уже занято")
     #             pass
@@ -464,6 +479,15 @@ class Castle():
     #             n = int(self.castle["field"].index(move_2))
     #             self.castle_step(n)
 
+    async def congratulation(self, user):
+        print(f"Ура! победа игрока {user}")
+        print(self.castle)
+        user = f"user_{user}"
+        await bot.send_message(chat_id=self.castle[user], text="Вы победили")
+
+        return
+
+
 async def castle_place_troops(key):
     print("castle_place_troops")
     key["field"] = [0 for i in range(0, 64)]
@@ -475,8 +499,8 @@ async def castle_place_troops(key):
         elif key["field_two"][i] != 0:
             key["field"][i] = key["field_two"][i]
         i += 1
-    key["q"].append("user_one")
-    key["q"].append("user_two")
+    # key["q"].append("user_one")
+    # key["q"].append("user_two")
     key["q"].append("tower_two")
     for t in key["q"]:
         if t == "user_one":
@@ -500,11 +524,13 @@ async def castle_place_troops(key):
         elif t == "tower_two":
             key["field"][63] = t
 
+
 async def castle_place_troops_random(user, key, t):
     print("castle_place_troops_random")
     r = random.choice(key[user])
     key["field"][r] = t
     key[user].remove(r)
+
 
 def text_total_war(key, warrior):
     print("text_total_war")
@@ -518,6 +544,7 @@ def text_total_war(key, warrior):
                (warrior[user_two]["barracks"][lvl_war], warrior[user_two]["shooting"][lvl_war],
                 warrior[user_two]["stable"][lvl_war])
     return text_one, text_two
+
 
 async def castle_battle(key):
     print("castle_battle")
@@ -544,14 +571,16 @@ async def castle_battle(key):
     print(key['q'])
     print(key['field'])
 
+
 async def castle_calculation(key, data):
     print("castle_calculation")
     nn = key["field"].index(data)
     move = data.split("_")[0]
-    user = data.split("_")[1]
+    # user = data.split("_")[1]
     if move == "user":
-        pole = [-8, -1, 0, 1, 8]
-        await castle_cal_pole(key, pole, nn, 1)
+        pole = [random.randint(-54, 54)]
+        # pole = [-8, -1, 0, 1, 8]
+        await castle_cal_pole(key, pole, nn, 3)
     if move == "barracks":
         pole = [-9, -7, -8, -1, 0, 1, 8, 7, 9]
         await castle_cal_pole(key, pole, nn, 1)
@@ -565,6 +594,7 @@ async def castle_calculation(key, data):
         pole = await castle_tower_field()
         await castle_cal_pole(key, pole, nn, 3)
 
+
 async def castle_tower_field():
     print("castle_tower_field")
     r = random.randint(0, 7)
@@ -577,6 +607,7 @@ async def castle_tower_field():
             [-15, -14, -13, -12, -11, -10, -9, -8],
             [-7, -6, -5, -4, -3, -2, -1, 0]]
     return pole[r]
+
 
 async def castle_cal_pole(key, pole, nn, kof):
     print("castle_cal_pole")
@@ -624,18 +655,18 @@ async def castle_cal_pole(key, pole, nn, kof):
     #         else:
     #             print("ТАймер не остановлен")
     #             if self.castle["start_one"] == -1:
-    #                 bot.send_message(text="Второй игрок не подтвердил своё участие\n", chat_id=self.castle["user_one"])
+    #                 bot.send_message(text="Второй игрок не подтвердил своё участие\n",
+    #                 =self.castle["user_one"])
     #                 bot.send_message(text="Бой закончен\n", chat_id=self.castle["user_two"],
     #                                  reply_markup=keyboard.keyboard_main_menu())
     #                 self.castle_escape()
     #             elif self.castle["start_two"] == -1:
-    #                 bot.send_message(text="Второй игрок не подтвердил своё участие\n", chat_id=self.castle["user_two"])
+    #                 bot.send_message(text="Второй игрок не подтвердил своё участие\n",
+    #                 chat_id=self.castle["user_two"])
     #                 bot.send_message(text="Бой закончен\n", chat_id=self.castle["user_one"],
     #                                  reply_markup=keyboard.keyboard_main_menu())
     #                 self.castle_escape()
     #
-
-
 
     #     def castle_escape_field(self):
     #         try:
@@ -728,16 +759,13 @@ async def castle_cal_pole(key, pole, nn, kof):
     #     queue.pop("q_two")
     #     castle = {"user_one": one, "user_two": two, "lvl_war": str(lvl_war), "start_one": 0, "start_two": 0,
     #               "chat_id_one": 0, "chat_id_two": 0, "dead_one": 0, "dead_two": 0,
-    #               "goto": " ", "que": 0, "q": queue["q"], "field": [], "t_one": [0, 16, 32, 48], "t_two": [63, 47, 31, 15]}
+    #               "goto": " ", "que": 0, "q": queue["q"], "field": [], "t_one": [0, 16, 32, 48],
+    #               "t_two": [63, 47, 31, 15]}
     #     castle = {"user_one": one, "user_two": two, "lvl_war": str(lvl_war), "start_one": 0, "start_two": 0,
     #               "chat_id_one": 0, "chat_id_two": 0, "dead_one": 0, "dead_two": 0,
     #               "goto": " ", "que": 0, "q": queue["q"], "field": [], "t_one": [19, 35], "t_two": [20, 36]}
     #     print(castle)
     #     return castle
-
-
-
-
 
     # elif self.call_data == "start_busy":
     #     await bot.answer_callback_query(callback_query_id=self.call_id, text="Поле уже занято")
@@ -745,40 +773,40 @@ async def castle_cal_pole(key, pole, nn, kof):
     #     await bot.answer_callback_query(callback_query_id=self.call_id, text="Поле не активно")
 
 
+async def text_message(move_1):
+    print("text_message")
+    print(move_1)
+    text_1, text_2 = "null", "null"
+    if move_1 == "user_one":
+        text_2 = "функции героя отключены до обновления\nПропустите ход"
+        text_1 = "Ожидайте хода соперника"
+    elif move_1 == "barracks_one":
+        text_2 = "Ходите воинами"
+        text_1 = "Ожидайте хода соперника"
+    elif move_1 == "shooting_one":
+        text_2 = "Ходите лучниками"
+        text_1 = "Ожидайте хода соперника"
+    elif move_1 == "stable_one":
+        text_2 = "Ходите всадниками"
+        text_1 = "Ожидайте хода соперника"
+    elif move_1 == "user_two":
+        text_1 = "функции героя отключены до обновления\nПропустите ход"
+        text_2 = "Ожидайте хода соперника"
+    elif move_1 == "barracks_two":
+        text_1 = "Ходите воинами"
+        text_2 = "Ожидайте хода соперника"
+    elif move_1 == "shooting_two":
+        text_1 = "Ходите лучниками"
+        text_2 = "Ожидайте хода соперника"
+    elif move_1 == "stable_two":
+        text_1 = "Ходите всадниками"
+        text_2 = "Ожидайте хода соперника"
+    elif move_1 == "tower_two":
+        text_1 = "Атакуйте башней"
+        text_2 = "Атакует башня"
+    return text_2, text_1
 
 
-
-
-#
-#
-# # def text_message(key, move_1):
-# #     print("text_message")
-# #     text_1, text_2 = "null", "null"
-# #     if move_1 == "user_one":
-# #         text_2 = "Ходите героем"
-# #         text_1 = "Ожидайте хода соперника"
-# #     elif move_1 == "barracks_one":
-# #         text_2 = "Ходите воинами"
-# #         text_1 = "Ожидайте хода соперника"
-# #     elif move_1 == "shooting_one":
-# #         text_2 = "Ходите лучниками"
-# #         text_1 = "Ожидайте хода соперника"
-# #     elif move_1 == "stable_one":
-# #         text_2 = "Ходите всадниками"
-# #         text_1 = "Ожидайте хода соперника"
-# #     elif move_1 == "user_two":
-# #         text_1 = "Ходите воинами"
-# #         text_2 = "Ожидайте хода соперника"
-# #     elif move_1 == "barracks_two":
-# #         text_1 = "Ходите лучниками"
-# #         text_2 = "Ожидайте хода соперника"
-# #     elif move_1 == "shooting_two":
-# #         text_1 = "Ходите всадниками"
-# #         text_2 = "Ожидайте хода соперника"
-# #     elif move_1 == "stable_two":
-# #         text_1 = "Ходите героем"
-# #         text_2 = "Ожидайте хода соперника"
-# #     return text_1, text_2
 #
 #
 async def castle_hit(key, move_1, hit):
@@ -792,8 +820,10 @@ async def castle_hit(key, move_1, hit):
     print(f"one {hit_one}")
     print(f"two {hit_two}")
     print(hit_old)
-    st_one = [0, 8, 16, 24, 32, 40, 48, 56,7, 15, 23, 31, 39, 47, 55, 63]
+    st_one = [0, 8, 16, 24, 32, 40, 48, 56, 7, 15, 23, 31, 39, 47, 55, 63]
     # st_two = [7, 15, 23, 31, 39, 47, 55, 63]
+    if move == "tower":
+        st_one = []
     if hit_two in st_one or hit_one in st_one:
         print("false")
         return False
@@ -810,10 +840,16 @@ async def castle_hit(key, move_1, hit):
     if move == "shooting":
         pole = [-8, -1, 1, 8]
         # cal_pole_one(key, pole, nn, 1)
+    if move == "tower":
+        pole = hit_old
     if hit_old in pole:
         war_one = move_1.split("_")[0]
         war_two = hit.split("_")[0]
         # Воины - Лучники
+        if war_one == "tower":
+            koef = 1000
+            n = await calculation_hit(key, koef, move_1, hit)
+            return n
         if war_one == "barracks" and war_two == "shooting":
             koef = 1.25
             n = await calculation_hit(key, koef, move_1, hit)
@@ -893,32 +929,32 @@ WHERE name = '{war_two}' and training.lvl = {lvl_war} and user_id = {user_two}""
     print(f"total {total}")
     print(f"Очередь до боя {key['q']}")
     print(f"поле до боя {key['field']}")
+    print(total)
     if total == 0:
         print("total 0")
-
         key["field"][hit_two] = 0
         key["field"][hit_one] = 0
         key["q"].remove(move_1)
         key["q"].remove(hit)
         print(f"Очередь после боя {key['q']}")
         print(f"поле после боя {key['field']}")
-            # warrior[user_one][war_one][lvl_war] = 0
-            # warrior[user_two][war_two][lvl_war] = 0
+        # warrior[user_one][war_one][lvl_war] = 0
+        # warrior[user_two][war_two][lvl_war] = 0
     elif total < 0:
         print("total < 0")
         key["q"].remove(move_1)
         key["field"][hit_one] = 0
         print(f"Очередь после боя {key['q']}")
         print(f"поле после боя {key['field']}")
-            # warrior[user_one][war_one][lvl_war] = 0
-            # warrior[user_two][war_two][lvl_war] = int(total / defence_two / health_two) * -1
-            # move_2 = key["q"][key["que"]]
-            # n = int(key["field"].index(move_2))
-            # return n
+        # warrior[user_one][war_one][lvl_war] = 0
+        # warrior[user_two][war_two][lvl_war] = int(total / defence_two / health_two) * -1
+        # move_2 = key["q"][key["que"]]
+        # n = int(key["field"].index(move_2))
+        # return n
 
-            # # key["field"][hit_one] = move_1
-        # key["dead_one"] += num_two + int(total / defence_two / health_two)
-        # key["dead_two"] += num_one
+        # # key["field"][hit_one] = move_1
+        key["dead_one"] += num_two + int(total / defence_two / health_two)
+        key["dead_two"] += num_one
 
     else:
         print("Убил всех")
@@ -927,18 +963,14 @@ WHERE name = '{war_two}' and training.lvl = {lvl_war} and user_id = {user_two}""
         key["field"][hit_two] = 0
         print(f"Очередь после боя {key['q']}")
         print(f"поле после боя {key['field']}")
-            # warrior[user_two][war_two][lvl_war] = 0
-            # warrior[user_one][war_one][lvl_war] -= int(total / attack_one / health_one)
+        # warrior[user_two][war_two][lvl_war] = 0
+        # warrior[user_one][war_one][lvl_war] -= int(total / attack_one / health_one)
 
-            # key["field"][hit_one] = 0
+        # key["field"][hit_one] = 0
 
-        # key["dead_one"] += num_one
-        # key["dead_two"] += int(total / attack_one / health_one)
-            # return hit_two
-
-
-
-
+        key["dead_one"] += num_one
+        key["dead_two"] += int(total / attack_one / health_one)
+        # return hit_two
 
 #     #     # pole = [-32, -24, -16, -8, -23, -15, -7, -14, -6, -5, 1, 2, 3, 4, 8, 9, 10, 11, 16, 17, 18, 24, 25, 32]
 #     #     # cal_pole_one(key, pole, nn, 3)
@@ -1201,12 +1233,14 @@ WHERE name = '{war_two}' and training.lvl = {lvl_war} and user_id = {user_two}""
 #         else:
 #             print("ТАймер не остановлен")
 #             if self.castle["start_one"] == -1:
-#                 await bot.send_message(text="Второй игрок не подтвердил своё участие\n", chat_id=self.castle["user_one"])
+#                 await bot.send_message(text="Второй игрок не подтвердил своё участие\n",
+#                 chat_id=self.castle["user_one"])
 #                 await bot.send_message(text="Бой закончен\n", chat_id=self.castle["user_two"],
 #                                  reply_markup=keyboard.keyboard_main_menu())
 #                 self.castle_escape()
 #             elif self.castle["start_two"] == -1:
-#                 await bot.send_message(text="Второй игрок не подтвердил своё участие\n", chat_id=self.castle["user_two"])
+#                 await bot.send_message(text="Второй игрок не подтвердил своё участие\n",
+#                 chat_id=self.castle["user_two"])
 #                 await bot.send_message(text="Бой закончен\n", chat_id=self.castle["user_one"],
 #                                  reply_markup=keyboard.keyboard_main_menu())
 #                 self.castle_escape()
@@ -1216,7 +1250,8 @@ WHERE name = '{war_two}' and training.lvl = {lvl_war} and user_id = {user_two}""
 #     #     print(req)
 #     #     row = await sql_selectone(req)
 #     #     if row[0] == self.message_chat_id:
-#     #         await bot.send_message(chat_id=self.message_chat_id, text="Вы сбежали", reply_markup=keyboard.keyboardmap())
+#     #         await bot.send_message(chat_id=self.message_chat_id, text="Вы сбежали",
+#     reply_markup=keyboard.keyboardmap())
 #     #         await bot.send_message(chat_id=row[1], text="Соперник сбежал", reply_markup=keyboard.keyboardmap())
 #     #         await sql_insert(f"DELETE FROM castle WHERE id_one = {self.message_chat_id}")
 #

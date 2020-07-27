@@ -93,18 +93,3 @@ class ThrottlingMiddleware(BaseMiddleware):
         # If current message is not last with current key - do not send message
         if thr.exceeded_count == throttled.exceeded_count:
             await message.reply('Unlocked.')
-
-#
-# @dp.message_handler(commands=['start'])
-# @rate_limit(5, 'start')  # this is not required but you can configure throttling manager for current handler using it
-# async def cmd_test(message: types.Message):
-#     # You can use this command every 5 seconds
-#     await message.reply('Test passed! You can use this command every 5 seconds.')
-#
-# #
-# if __name__ == '__main__':
-#     # Setup middleware
-#     dp.middleware.setup(ThrottlingMiddleware())
-#
-#     # Start long-polling
-#     executor.start_polling(dp)

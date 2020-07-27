@@ -1,9 +1,0 @@
-$ cat .gitignore
-__pycache__/
-venv/
-.idea/
-data/config.py
-*.json
-*.db
-database.db
-temp/*.txt

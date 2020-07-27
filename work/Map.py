@@ -11,6 +11,7 @@ from work.Users import recovery_move
 from work.BattleCastle import castle_st
 import asyncio
 
+
 async def goto(call, message):
     pole = 100
     print(message.text)
@@ -161,11 +162,13 @@ async def database(message, call, cell_user, value_call, s):
         await mine(message, call.data)
     # enemy
     elif value_call == "enemy":
-        try:
-            await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
-        except Exception as n:
-            print(n)
-        await enemy_write(message, call.data)
+        await bot.answer_callback_query(callback_query_id=call.id, text='Ожидайте обновление')
+
+        # try:
+        #     await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
+        # except Exception as n:
+        #     print(n)
+        # await enemy_write(message, call.data)
     elif value_call.split("_")[0] == "user":
         # one = int(message.chat.id)
         two = (await sql.sql_selectone(f"SELECT id FROM maps WHERE maps_id = {call.data}"))[0]
@@ -228,7 +231,7 @@ async def timer_mining(message, data):
                      SET time_start = strftime('%s','now','localtime'), time_stop = '%s', mining_start = 1 
                      Where user_id = %s"""
         await sql.sql_insert(request % (formats, time_s, message.chat.id))
-        await message.answer(text=texting.text_mining_start, reply_markup=keyboard.keyboard_map())
+        return
     elif data == "stop":
         row = await sql.sql_selectone(
             "select time_start, resource, cell, mining_start from resource where user_id = %s" % message.chat.id)
@@ -255,11 +258,10 @@ async def timer_mining(message, data):
                       """ % (resource, resource, summa, summa, user_id, summa, cell_r)
             await sql.sql_insertscript(request)
             text = "⚡️Вы вышли и собрали %s ⚡" % summa
-            await message.answer(text=text, reply_markup=keyboard.keyboardmap())
-            await goto(call="*", message=message)
+            return text
         else:
-            await message.answer(text="Выход", reply_markup=keyboard.keyboardmap())
-            await goto(call="*", message=message)
+            return "Выход"
+
 
 
 async def timer_start():
@@ -313,6 +315,13 @@ async def cell():
         await cell()
 
 
+def find_location():
+    import os
+    return os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))).replace('\\', '/') + '/'
+
+PATH = find_location()
+
+
 async def new_maps():  # Прочитать файл
     pole, n, maps = 100, 0, {}
     all_cell = pole * pole
@@ -324,17 +333,13 @@ async def new_maps():  # Прочитать файл
             print("Ячейка пустая")
             await sql.sql_insert("INSERT INTO maps Values (%s, 'user', 0, 0, %s)" % (r, row[0]))
             await sql.sql_insert("UPDATE heroes SET cell = '%s' WHERE user_id = %s" % (r, row[0]))
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
     while n < all_cell:
         n += 1
         if not await sql.sql_select("SELECT id FROM maps WHERE maps_id=%s" % n):
             resource = await resource_start()
             request = "INSERT INTO maps Values (%s, '%s', %s, %s, 0)" % (n, resource[0], resource[1], resource[2])
-            print(request)
-            cursor.execute(request)
-    conn.commit()
-    conn.close()
+            await sql.sql_insert_conn(request)
+    return "Создание карты завершено"
 
 
 async def resource_start():

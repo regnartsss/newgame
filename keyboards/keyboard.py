@@ -84,9 +84,9 @@ def keyboard_info():
     return keyboard
 
 def keyboard_buy():
-    keyboard = ReplyKeyboardMarkup()
-    keyboard.row("Tranzzo")
-#    keyboard.row("QIWI")
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+#    keyboard.row("Tranzzo")
+    keyboard.row("QIWI")
     keyboard.row (texting.button_back)
     return keyboard
 

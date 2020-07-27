@@ -23,16 +23,10 @@ class DB_USER:
 VALUES (%s, '%s', '%s', '%s', '%s', %s)"""
     ADD_NEW_USER = "INSERT INTO heroes(user_id, username, data, avatar, nik_name) VALUES (%s, '%s', '%s', '%s', '%s')"
     COUNT_USERS = "SELECT COUNT(*) FROM heroes"
-    # GET_ID = "SELECT id FROM users WHERE chat_id = $1"
     CHECK_REFERRALS = "SELECT user_id FROM heroes WHERE referral = %s"
-
-    # ADD_NEW_USER_RESOURCE =
-    # CHECK_BALANCE = "SELECT balance FROM users WHERE chat_id = $1"
-    # ADD_MONEY = "UPDATE users SET balance=balance+$1 WHERE chat_id = $2"
     ADD_NEW_USER_WARRIOR = "INSERT INTO warrior VALUES (%s, %s,0,0,0)"
 
     async def add_new_user(self, referral=None):
-
         user = types.User.get_current()
         user_id = user.id
         username = user.username
@@ -41,21 +35,13 @@ VALUES (%s, '%s', '%s', '%s', '%s', %s)"""
         avatar = "👶"
         farm_time = datetime.now().strftime("%Y:%m:%d:%H:%M:%S")
         args = user_id, username, data, avatar, nik_name
-
         if referral:
             args += (int(referral),)
             command = self.ADD_NEW_USER_REFERRAL
         else:
             print("нет реферала")
             command = self.ADD_NEW_USER
-        # print(self.ADD_NEW_USER_RESOURCE)
-        request = f"""INSERT INTO resource (user_id, farm_timer) 
-VALUES ({user_id}, strftime('%Y:%m:%d:%H:%M:%S','now','localtime'))"""
-        #                   INSERT INTO warrior VALUES ({user_id}, 1,0,0,0);
-        # INSERT INTO warrior VALUES ({user_id}, 2,0,0,0);
-        # INSERT INTO warrior VALUES ({user_id}, 3,0,0,0);
-        # INSERT INTO warrior VALUES ({user_id}, 4,0,0,0);
-        # INSERT INTO warrior VALUES ({user_id}, 5,0,0,0);"""
+        request = f"""INSERT INTO resource (user_id, farm_timer) VALUES ({user_id}, strftime('%Y:%m:%d:%H:%M:%S','now','localtime'))"""
         await sql.sql_insert(request)
         await self.warrior_user()
         try:
@@ -70,10 +56,8 @@ VALUES ({user_id}, strftime('%Y:%m:%d:%H:%M:%S','now','localtime'))"""
 
     async def warrior_user(self):
         i = 1
-        # print("fffff")
         user_id = types.User.get_current().id
         command = self.ADD_NEW_USER_WARRIOR
-
         while i <= 5:
             await sql.sql_insert(command % (user_id, i))
             i += 1
@@ -97,9 +81,10 @@ db = DB_USER()
 async def start_user_name(message):
     print("test")
     if not message.from_user.username:
-        button = "player_%i" % (random.randint(1, 9999999))
+        button = ReplyKeyboardMarkup(resize_keyboard=True).row(f"player_{random.randint(1, 9999999)}")
     else:
         button = ReplyKeyboardMarkup(resize_keyboard=True).row(message.from_user.username)
+
     await NewName.name.set()
     await message.answer(text=texting.text_user_name, reply_markup=button)
 
@@ -118,11 +103,6 @@ async def register_user(message):
     text = ""
     user_id = message.chat.id
     referral = message.get_args()
-    # nik_name = "player_%i" % (random.randint(1, 9999999))
-    # username = message.from_user.username
-    # data = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    # avatar = "👶"
-    # farm_time = datetime.now().strftime("%Y:%m:%d:%H:%M:%S")
     await db.add_new_user(referral=referral)
     count_users = await db.count_users()
     bot_username = (await bot.me).username
@@ -133,12 +113,6 @@ async def register_user(message):
     Ваша реферальная ссылка: {bot_link}
     Проверить рефералов можно по команде: /referrals
             """
-    # print(text)
-    # print(farm_time)
-    # sql.sql_insert("INSERT INTO heroes VALUES (%s,'%s','%s','%s','%s', 0,2,0,2,1,0,1,50,0,0,'%s',0,0,0,0,0,0,0,0)" % (
-    #     user_id, username, data, avatar, nik_name, referral))
-
-    # sql.sql_insert("INSERT INTO building VALUES (%s, 1,0,0,0,0,0,0)" % user_id)
     await start_cell(message)
     await start_parameters(user_id=user_id)
     await message.answer(text)
@@ -157,18 +131,18 @@ async def start_cell(message):
 
 
 async def start_user_default():
+    await asyncio.sleep(10)
     rows = await sql.sql_select("select user_id, lvlheroes, lvlstep from heroes")
     for row in rows:
         await start_parameters(row[0])
 
 
 async def start_parameters(user_id=None):
-    request = f"""Update heroes SET 
-    health_used = (SELECT health FROM heroes LEFT JOIN data_heroes 
+    request = f"""Update heroes SET health_used = (SELECT health FROM heroes LEFT JOIN data_heroes 
+ON heroes.lvlheroes = data_heroes.lvlheroes WHERE user_id = {user_id}), 
+energy_used = (SELECT energy FROM heroes LEFT JOIN data_heroes 
 ON heroes.lvlheroes = data_heroes.lvlheroes WHERE user_id = {user_id}),
-    energy_used = (SELECT energy FROM heroes LEFT JOIN data_heroes 
-ON heroes.lvlheroes = data_heroes.lvlheroes WHERE user_id = {user_id}),
-    step_used = (SELECT step FROM heroes LEFT JOIN data_step 
+step_used = (SELECT step FROM heroes LEFT JOIN data_step 
 ON heroes.lvlstep = data_step.lvlstep WHERE user_id = {user_id})
     WHERE user_id =  {user_id}"""
     await sql.sql_insertscript(request)
@@ -220,7 +194,8 @@ WHERE heroes.user_id = {user_id} AND resource.user_id = {user_id}"""
     elif key == "build":
         return stat
     else:
-        await message.answer(f"{info_hero}\n{stat}")
+        return f"{info_hero}\n{stat}"
+        # await message.answer(f"{info_hero}\n{stat}")
 
 
 # Координаты героя
@@ -320,9 +295,9 @@ async def recovery_energy(message):
 WHERE user_id = {user_id}""")
         lvl, referral = await sql.sql_selectone(f"SELECT lvlheroes, referral FROM heroes WHERE user_id = {user_id}")
         request = f"UPDATE resource SET diamond = diamond + {int(lvl) * 5} WHERE user_id = {referral}"
-        print(request)
         await sql.sql_selectone(request)
-        await bot.send_message(chat_id=referral, text=f"Вам начисленны {int(lvl) * 5} алмазов за вашего реферала")
+        if referral != 0:
+            await bot.send_message(chat_id=referral, text=f"Вам начисленны {int(lvl) * 5} алмазов за вашего реферала")
         # await update_statistic(user_id)
         await start_parameters(user_id)
 

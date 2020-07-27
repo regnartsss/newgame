@@ -2,7 +2,7 @@ from aiogram import types
 from aiogram.types.message import ContentTypes
 from loader import bot, dp
 from keyboards.keyboard import keyboard_main_menu
-from work.Buy import succefull_tranzzo
+# from work.Buy import succefull_tranzzo
 
 
 @dp.shipping_query_handler(lambda query: True)
@@ -28,4 +28,4 @@ async def got_payment(message: types.Message):
                          'Оставайтесь на связи. '.format(message.successful_payment.total_amount / 100,
                                                          message.successful_payment.currency),
                          parse_mode='Markdown', reply_markup=keyboard_main_menu())
-    await succefull_tranzzo(message)
+    # await succefull_tranzzo(message)

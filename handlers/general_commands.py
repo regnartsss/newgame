@@ -1,9 +1,10 @@
 from aiogram import types
 from loader import dp
 from work.Users import search_user, db
+from work.Buy import buy_check_qiwi
 from utils import sql
 import work
-# from middleware.middleware_and_antiflood import rate_limit
+# from middlewares.middleware_and_antiflood import rate_limit
 
 # logging.basicConfig(level=logging.INFO)
 
@@ -20,6 +21,8 @@ import work
 # @dp.message_handler(is_admin=True, commands=['update'])
 # async def admin(message: types.Message):
 #     await message.answer("ты админ")
+
+
 # @dp.message_handler(is_superuser=True, commands='restart')
 # async def restart(message: types.Message):
 #     def tread_stop(sec=1):
@@ -31,27 +34,31 @@ import work
 #     logger.warning(msg)
 #     import threading
 #     threading.Thread(target=tread_stop, args=()).start()
+# #
+# @dp.message_handler(commands=['sql'])
+# # @rate_limit(5, 'start')
+# async def cmd_start(message: types.Message):
+#     print(message.text[5:])
+#     request = message.text[5:]
+#     await sql.sql_insert(request)
+#     # if (await sql.sql_selectone("select start_bot from data"))[0] == 1:
+#     #     print("Бот остановлен")
+#     #     await message.answer("Бот временно остановлен")
+#     # else:
+#     #     if message.text.split(" ")[0] == "/start":
+#     #         await search_user(message)
+# #
 #
-@dp.message_handler(commands=['sql'])
-# @rate_limit(5, 'start')
-async def cmd_start(message: types.Message):
-    print(message.text[5:])
-    request = message.text[5:]
-    await sql.sql_insert(request)
-    # if (await sql.sql_selectone("select start_bot from data"))[0] == 1:
-    #     print("Бот остановлен")
-    #     await message.answer("Бот временно остановлен")
-    # else:
-    #     if message.text.split(" ")[0] == "/start":
-    #         await search_user(message)
-
 
 @dp.message_handler(commands=['start'])
 # @rate_limit(5, 'start')
 async def cmd_start(message: types.Message):
+    print(message.get_args())
     if (await sql.sql_selectone("select start_bot from data"))[0] == 1:
         print("Бот остановлен")
         await message.answer("Бот временно остановлен")
+    elif message.get_args() == "check_buy":
+        await message.answer(text=await buy_check_qiwi(message))
     else:
         if message.text.split(" ")[0] == "/start":
             await search_user(message)
