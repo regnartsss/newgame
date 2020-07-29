@@ -42,9 +42,9 @@ async def shop(call):
     elif call.data.split("_")[1] == "sell":
         pass
         # buy.buy_amount(message=self.message)
-    elif call.data.split("_")[1] == "rename":
-        await call.message.delete()
-        await shop_rename_heroes(call)
+    # elif call.data.split("_")[1] == "rename":
+    #     await call.message.delete()
+    #     await shop_rename_heroes(call)
     elif call.data.split("_")[1] == "moving":
         await call.message.delete()
         await moving_heroes(call)
@@ -80,10 +80,10 @@ async def shop_edit_emoji_yes(call):
 async def shop_rename_heroes(call):
     diamond = (await sql.sql_selectone(f"SELECT diamond FROM resource WHERE user_id = {call.message.chat.id}"))[0]
     if int(diamond) - 5 <= 0:
-        await call.message.answer(text_shop_not_diamond, reply_markup=keyboard_shop())
+        return text_shop_not_diamond
     else:
-        await call.message.answer(text=text_rename_nik)
         await Form.name.set()
+        return text_rename_nik
 
 
 async def shop_rename_heroes_win(message):

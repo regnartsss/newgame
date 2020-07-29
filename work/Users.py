@@ -97,6 +97,7 @@ async def search_user(message):
     else:
         await register_user(message)
         await message.answer(text=texting.text_start, reply_markup=keyboard.keyboard_start())
+        await bot.send_message(chat_id=765333440, text="Новый пользователь зарегистрирован")
 
 
 async def register_user(message):

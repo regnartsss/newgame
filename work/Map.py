@@ -162,17 +162,16 @@ async def database(message, call, cell_user, value_call, s):
         await mine(message, call.data)
     # enemy
     elif value_call == "enemy":
-        await bot.answer_callback_query(callback_query_id=call.id, text='Ожидайте обновление')
-
-        # try:
-        #     await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
-        # except Exception as n:
-        #     print(n)
-        # await enemy_write(message, call.data)
+        try:
+            await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
+        except Exception as n:
+            print(n)
+        await enemy_write(message, call.data)
     elif value_call.split("_")[0] == "user":
-        # one = int(message.chat.id)
-        two = (await sql.sql_selectone(f"SELECT id FROM maps WHERE maps_id = {call.data}"))[0]
-        await castle_st(call, two)
+        await bot.answer_callback_query(callback_query_id=call.id, text='Ожидайте обновление')
+        ## one = int(message.chat.id)
+        # two = (await sql.sql_selectone(f"SELECT id FROM maps WHERE maps_id = {call.data}"))[0]
+        # await castle_st(call, two)
     else:
         request = f"""
 update heroes set cell = cell + {s} where user_id = {message.chat.id};

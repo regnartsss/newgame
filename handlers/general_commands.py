@@ -64,6 +64,7 @@ async def cmd_start(message: types.Message):
             await search_user(message)
 
 
+
 @dp.message_handler(commands=["referrals"])
 async def check_referrals(message: types.Message):
     if await sql.sql_selectone("select start_bot from data")[0] == 1:

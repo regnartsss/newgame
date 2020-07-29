@@ -1,22 +1,12 @@
-from text.texting import button_building, text_building_update, button_update, button_market,text_building_resource,text_building_goto,button_back,text_building_up
+from text.texting import text_building_market, text_building_update, button_update, button_market, \
+    text_building_resource, text_building_goto, button_back, text_building_up
 from utils import sql
 from aiogram import types
 from loader import bot
-from work.Users import info_heroes
-
-
-async def building(message):
-    # if message.text == button_building:
-    #     await message.answer(text=text_building_update % (await info_heroes(message, key="build")), reply_markup=await keyboard_building(message))
-    # else:
-        try:
-            await message.edit_text(
-                text=text_building_update % (await info_heroes(message, key="build")), reply_markup=await keyboard_building(message))
-        except Exception as n:
-            print(n)
 
 
 async def build(call, message, text=""):
+    print(call.data)
     keyboard = types.InlineKeyboardMarkup()
     try:
         print(call.isdigit())
@@ -26,7 +16,7 @@ async def build(call, message, text=""):
 
     try:
         if data == "back":
-            await building(message)
+            await call
             pass
         elif data == "update":
             # call_data = self.call_data.split("_")[2]
@@ -123,22 +113,6 @@ async def build(call, message, text=""):
                         await build(data, message)
             else:
                 await bot.answer_callback_query(callback_query_id=call.id, text="Не хватает ресуров")
-        # elif call.data == "market":
-        #     print(111)
-        #     if call.data.split("_")[2] == "buy" or call.data.split("_")[2] == "sell":
-        #         print(222)
-        #         try:
-        #             if call.data.split("_")[4] == "1000" or call.data.split("_")[4] == "10000":
-        #                 self.buysell()
-        #         except:
-        #             bot.edit_message_text(text=self.market_text(), chat_id=self.message_chat_id,
-        #                                   message_id=self.call_message_id,
-        #                                   reply_markup=self.keyboard_market_buysell())
-        #     else:
-        #
-        #         bot.edit_message_text(text=self.market_text(), chat_id=self.message_chat_id,
-        #                               message_id=self.call_message_id,
-        #                               reply_markup=self.keyboard_market())
         else:
             print(data)
             try:
@@ -221,11 +195,12 @@ async def update(message, dat):
     await build(data, message, text)
 
 
-async def keyboard_building(message):
+async def keyboard_building(user_id):
     keyboard_build = types.InlineKeyboardMarkup()
     i = 17
     tab = []
-    request = "SELECT * FROM heroes WHERE user_id = %s" % message.chat.id
+    request = f"SELECT * FROM heroes WHERE user_id = {user_id}"
+    print(request)
     r = await sql.sql_selectone(request)
     r_r = await sql.sql_select("pragma table_info(heroes)")
     temp = 16
@@ -241,83 +216,76 @@ async def keyboard_building(message):
     keyboard_build.row(types.InlineKeyboardButton(text=button_market, callback_data="build_market_null"))
     return keyboard_build
 
-# def market_text(self):
-#     stone_player = str(resource[str(self.message_chat_id)]["stone"])
-#     wood_player = str(resource[str(self.message_chat_id)]["wood"])
-#     iron_player = str(resource[str(self.message_chat_id)]["iron"])
-#     food_player = str(resource[str(self.message_chat_id)]["food"])
-#     gold_player = str(resource[str(self.message_chat_id)]["gold"])
-#     text = texting.text_building_market % (gold_player, stone_player, wood_player, iron_player, food_player)
-#     return text
-#
-# def keyboard_market(self):
-#     keyboard = telebot.types.InlineKeyboardMarkup()
-#     keyboard.add(telebot.types.InlineKeyboardButton(text="💰 Купить", callback_data="build_market_buy"),
-#                  telebot.types.InlineKeyboardButton(text="💰 Продать", callback_data="build_market_sell"))
-#     keyboard.row(telebot.types.InlineKeyboardButton(text=texting.button_back, callback_data="build_back"))
-#     return keyboard
-#
-# def keyboard_market_buysell(self):
-#     keyboard = telebot.types.InlineKeyboardMarkup()
-#     m = self.call_data.split("_")[2]
-#     stone1000 = telebot.types.InlineKeyboardButton(text="⛏ Камень 1000",
-#                                                    callback_data="build_market_" + m + "_stone_1000")
-#     iron1000 = telebot.types.InlineKeyboardButton(text="⚒ Железо 1000",
-#                                                   callback_data="build_market_" + m + "_iron_1000")
-#     wood1000 = telebot.types.InlineKeyboardButton(text="🌲 Дерево 1000",
-#                                                   callback_data="build_market_" + m + "_wood_1000")
-#     food1000 = telebot.types.InlineKeyboardButton(text="🌽 Еда 1000",
-#                                                   callback_data="build_market_" + m + "_food_1000")
-#     stone10000 = telebot.types.InlineKeyboardButton(text="⛏ Камень 10000",
-#                                                     callback_data="build_market_" + m + "_stone_10000")
-#     iron10000 = telebot.types.InlineKeyboardButton(text="⚒ Железо 10000",
-#                                                    callback_data="build_market_" + m + "_iron_10000")
-#     wood10000 = telebot.types.InlineKeyboardButton(text="🌲 Дерево 10000",
-#                                                    callback_data="build_market_" + m + "_wood_10000")
-#     food10000 = telebot.types.InlineKeyboardButton(text="🌽 Еда 10000",
-#                                                    callback_data="build_market_" + m + "_food_10000")
-#
-#     if m == "buy":
-#         buysell = telebot.types.InlineKeyboardButton(text="Выберите кол-во для покупки", callback_data="nuu")
-#     elif m == "sell":
-#         buysell = telebot.types.InlineKeyboardButton(text="Выберите кол-во для продажи", callback_data="nuu")
-#
-#     keyboard.row(buysell)
-#     keyboard.row(stone1000, stone10000)
-#     keyboard.row(wood1000, wood10000)
-#     keyboard.row(iron1000, iron10000)
-#     if m == "buy":
-#         keyboard.row(food1000, food10000)
-#
-#     keyboard.row(telebot.types.InlineKeyboardButton(text=texting.button_back, callback_data="build_market_null"))
-#     return keyboard
 
-# def buysell(self):
-#
-#     m = self.call_data.split("_")[2]
-#     res = self.call_data.split("_")[3]
-#     num = int(self.call_data.split("_")[4])
-#     lvl_storage = build[str(self.message_chat_id)]["storage"]
-#     #        print(lvl_storage)
-#     if m == "buy":
-#         if resource[str(self.message_chat_id)]["gold"] - int(num / 100) < 0:
-#             bot.answer_callback_query(callback_query_id=call.id, text="У вас не хватает золота")
-#         elif resource[str(self.message_chat_id)][res] + num > buildings["storage"][lvl_storage]["capacity"]:
-#             bot.answer_callback_query(callback_query_id=call.id, text="Нет места на складе")
-#         else:
-#             resource[str(self.message_chat_id)]["gold"] -= int(num / 100)
-#             resource[str(self.message_chat_id)][res] += num
-#             bot.edit_message_text(text=self.market_text(), chat_id=self.message_chat_id,
-#                                   message_id=self.call_message_id,
-#                                   reply_markup=self.keyboard_market_buysell())
-#     elif m == "sell":
-#         if resource[str(self.message_chat_id)][res] - num < 0:
-#             bot.answer_callback_query(callback_query_id=call.id, text="У вас не хватает ресурсов")
-#
-#         else:
-#             resource[str(self.message_chat_id)]["gold"] += int(num / 100)
-#             resource[str(self.message_chat_id)][res] -= num
-#             bot.edit_message_text(text=self.market_text(), chat_id=self.message_chat_id,
-#                                   message_id=self.call_message_id,
-#                                   reply_markup=self.keyboard_market_buysell())
-#     save("resource")
+async def market_text(user_id):
+    request = f"SELECT stone, wood, iron, food, gold FROM resource WHERE user_id = {user_id}"
+    stone, wood, iron, food, gold = await sql.sql_selectone(request)
+    text = text_building_market % (gold, stone, wood, iron, food)
+    return text
+
+
+async def keyboard_market():
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(types.InlineKeyboardButton(text="💰 Купить", callback_data="build_market_buy"),
+                 types.InlineKeyboardButton(text="💰 Продать", callback_data="build_market_sell"))
+    keyboard.row(types.InlineKeyboardButton(text=button_back, callback_data="build_back"))
+    return keyboard
+
+
+async def keyboard_market_buysell(data):
+    keyboard = types.InlineKeyboardMarkup()
+    stone1000 = types.InlineKeyboardButton(text="⛏ Камень 1000", callback_data=f"build_market_{data}_stone_1000")
+    iron1000 = types.InlineKeyboardButton(text="⚒ Железо 1000", callback_data=f"build_market_{data}_iron_1000")
+    wood1000 = types.InlineKeyboardButton(text="🌲 Дерево 1000", callback_data=f"build_market_{data}_wood_1000")
+    food1000 = types.InlineKeyboardButton(text="🌽 Еда 1000", callback_data=f"build_market_{data}_food_1000")
+    stone10000 = types.InlineKeyboardButton(text="⛏ Камень 10000", callback_data=f"build_market_{data}_stone_10000")
+    iron10000 = types.InlineKeyboardButton(text="⚒ Железо 10000", callback_data=f"build_market_{data}_iron_10000")
+    wood10000 = types.InlineKeyboardButton(text="🌲 Дерево 10000", callback_data=f"build_market_{data}_wood_10000")
+    food10000 = types.InlineKeyboardButton(text="🌽 Еда 10000", callback_data=f"build_market_{data}_food_10000")
+    buy_sell = types.InlineKeyboardButton(text="null", callback_data="null")
+
+    if data == "buy":
+        buy_sell = types.InlineKeyboardButton(text="Выберите кол-во для покупки", callback_data="null")
+    elif data == "sell":
+        buy_sell = types.InlineKeyboardButton(text="Выберите кол-во для продажи", callback_data="null")
+    keyboard.row(buy_sell)
+    keyboard.row(stone1000, stone10000)
+    keyboard.row(wood1000, wood10000)
+    keyboard.row(iron1000, iron10000)
+    if data == "buy":
+        keyboard.row(food1000, food10000)
+
+    keyboard.row(types.InlineKeyboardButton(text=button_back, callback_data="build_market_null"))
+    return keyboard
+
+
+async def buysell(call):
+    user_id = call.from_user.id
+    data = call.data.split("_")[2]
+    res = call.data.split("_")[3]
+    num = int(call.data.split("_")[4])
+    request = f"SELECT {res}, gold, heroes.storage FROM heroes LEFT JOIN resource " \
+              f"ON heroes.user_id = resource.user_id WHERE heroes.user_id = {user_id}"
+    res_user, gold, lvl_storage = await sql.sql_selectone(request)
+    if data == "buy":
+        if gold - int(num / 100) < 0:
+            await call.answer(text="У вас не хватает золота")
+        # elif resource[str(self.message_chat_id)][res] + num > buildings["storage"][lvl_storage]["capacity"]:
+        #     await call.answer(text="Нет места на складе")
+        else:
+            gold -= int(num / 100)
+            res_user += num
+            request = f"UPDATE resource SET gold = {gold}, {res} = {res_user} WHERE user_id = {user_id}"
+            await sql.sql_insert(request)
+            text = await market_text(call.from_user.id)
+            await call.message.edit_text(text=text, reply_markup=await keyboard_market_buysell(data))
+    elif data == "sell":
+        if res_user - num < 0:
+            await call.answer(text="У вас не хватает ресурсов")
+        else:
+            gold += int(num / 100)
+            res_user -= num
+            request = f"UPDATE resource SET gold = {gold}, {res} = {res_user} WHERE user_id = {user_id}"
+            await sql.sql_insert(request)
+            text = await market_text(call.from_user.id)
+            await call.message.edit_text(text=text, reply_markup=await keyboard_market_buysell(data))

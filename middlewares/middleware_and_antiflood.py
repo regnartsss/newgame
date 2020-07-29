@@ -35,6 +35,7 @@ class ThrottlingMiddleware(BaseMiddleware):
         super(ThrottlingMiddleware, self).__init__()
 
     async def on_process_message(self, message: types.Message, data: dict):
+        print(message.text)
         """
         This handler is called when dispatcher receives a message
 

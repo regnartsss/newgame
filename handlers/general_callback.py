@@ -1,18 +1,15 @@
 from loader import dp, bot
 from aiogram import types
-from work.Map import goto
-from work.Build import build
+from work.Build import build, keyboard_market, keyboard_market_buysell
 from work.Fight import fight, field_goto
 from work.Training import entry, training, train
-from work.Shop import shop
 from work.Buy import buy_check_qiwi
 from work.BattleCastle import Castle
 from keyboards.keyboard import keyboard_buy
 
-
-@dp.callback_query_handler(lambda call: call.data.split("_")[0] == 'build')
-async def handler(call: types.CallbackQuery):
-    await build(message=call.message, call=call)
+@dp.callback_query_handler(text='null')
+async def market(call: types.CallbackQuery):
+    await call.answer(text="")
 
 
 @dp.callback_query_handler(lambda call: call.data.split("_")[0] == 'buy_qiwi')
@@ -23,11 +20,6 @@ async def handler(call: types.CallbackQuery):
 @dp.callback_query_handler(lambda call: call.data.split("_")[0] == 'buy')
 async def handler(call: types.CallbackQuery):
     await call.message.answer(text="Выберите платежную систему", reply_markup=keyboard_buy())
-
-
-@dp.callback_query_handler(lambda call: call.data.split("_")[0] == 'shop')
-async def handler(call: types.CallbackQuery):
-    await shop(call=call)
 
 
 @dp.callback_query_handler(lambda call: call.data.split("_")[0] == 'null')
@@ -96,6 +88,6 @@ async def handler(call: types.CallbackQuery):
     await field_goto(call)
 
 
-@dp.callback_query_handler(lambda callback_query: True)
-async def handler(call: types.CallbackQuery):
-    await goto(call=call, message=call.message)
+
+
+

@@ -1,5 +1,5 @@
 from utils import sql
-
+test = "hhhddd"
 #
 # def benchmark(func):
 #     global st
@@ -146,17 +146,14 @@ text_moving_error = "Ввод не корректен, повторите в ф�
 text_moving_win = "Вы были перемещены по координатам %s:%s"
 text_moving_busy = "Ячейка занята, попробуйте другие координаты"
 text_ataka_castle = "Вы напали на %s \nЧто будете делать?\n ⚔️Атаковать или 🏃‍♂️Отступить?"
-
-
-
 button_maps = "🗺 Карта"
 button_mining_map = "🗺 Вернуться на карту"
 button_goto_two = "🏃‍♂ Отступить"
 button_goto = "🏃‍♂ Сбежать"
-button_castle_escape = "🏃🏻‍♂ Отступить"
+button_castle_escape = "🏃🏻‍♂ Отступить!!!!!"
 button_castle_escape_field = "Покинуть поле боя"
-list_Maps_goto = [button_maps,  button_goto_two,button_mining_map, button_mining,button_goto,button_castle_escape, button_castle_escape_field,"/--", "⏱ Вывод карты ⏱"]
-list_Maps = [button_maps,button_goto_two,button_castle_escape,button_goto,button_castle_escape_field,"🗺 Вернуться на карту", '🗺 Карта']
+list_Maps_goto = [button_maps, button_goto_two, button_mining_map, button_mining, button_goto, button_castle_escape, button_castle_escape_field,"/--", "⏱ Вывод карты ⏱"]
+list_Maps = [button_maps, button_goto_two, button_mining_map, button_castle_escape, button_goto, button_castle_escape_field]
 
 
 
