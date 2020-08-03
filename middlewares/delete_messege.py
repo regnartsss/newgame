@@ -3,6 +3,7 @@ from aiogram.dispatcher.middlewares import BaseMiddleware
 from aiogram import types
 import aiogram.utils.exceptions
 
+
 class DeleteMess(BaseMiddleware):
     """
     Simple middleware
@@ -18,6 +19,7 @@ class DeleteMess(BaseMiddleware):
         :param message:
         """
         self.user_id = message.from_user.id
+        message_id = 0
         try:
             message_id = (await storage.get_data(chat=self.user_id))['message_id']
         except KeyError:

@@ -6,10 +6,11 @@ from text import texting
 from text.buy import textsell
 from keyboards import keyboard
 from work import Build, Users, Training, Fight, Top
-from work.BattleCastle import Castle
+# from work.BattleCastle import Castle
 from work.Buy import function_buy, Buy, buy_qiwi, buy_amount
 from work.Map import new_maps
 from data.config import admins
+from work.BattleTower import start_battle_tower
 
 
 def reload_module_text():
@@ -34,9 +35,7 @@ async def admin(message: types.Message):
     elif message.text == "111":
         await storage.set_data(chat=user_id, data={"message_id": message.message_id + 1})
     elif message.text == "222":
-        user_id = message.from_user.id
-        message_id = 3333
-        await bot.delete_message(chat_id=user_id, message_id=message_id)
+        await start_battle_tower()
 
 
 @dp.message_handler(state=Users.NewName.name)
@@ -65,7 +64,6 @@ async def stop(message: types.Message):
 async def stop(message: types.Message):
     await message.answer(text=texting.text_mining_ataka, reply_markup=keyboard.keyboard_map())
     await Fight.mining_attack(message)
-
 
 
 @dp.message_handler(text=texting.button_location)
@@ -99,6 +97,18 @@ async def top_castle(message: types.Message):
     await message.answer(text=await Top.top_castle(message))
 
 
+@dp.message_handler(text="Пригласить")
+async def top_castle(message: types.Message):
+    bot_username = (await bot.me).username
+    bot_link = f"https://t.me/{bot_username}?start={message.chat.id}"
+    await message.answer("Для приглашения друга отправть ему ссылку ниже. \n"
+                         "И получи 💎 за каждый взятый им уровень")
+    await message.answer(bot_link)
+
+
+@dp.message_handler(text=texting.button_attack)
+async def top_castle(message: types.Message):
+    await Fight.fight(message=message, call='')
 
 @dp.message_handler(content_types=types.ContentTypes.TEXT)
 async def all_other_messages(message: types.Message):
@@ -137,8 +147,7 @@ async def all_other_messages(message: types.Message):
             # await message.answer(text=Users.info_heroes(message, key))
             # await message.answer(text=Users.info_heroes(message, key="build"))
         # Атаковать
-        elif message.text == texting.button_attack:
-            await Fight.fight(message=message, call='')
+
         # Cтроение
         # elif message.text == texting.button_building:
         #     menu = "building"
@@ -172,12 +181,7 @@ async def all_other_messages(message: types.Message):
         elif message.text == "💬 Чат":
             await bot.send_message(message.chat.id,
                                    "Чат предназначен для общения, предложения идей и выявления багов @heroeslifeg")
-        elif message.text == "Пригласить":
-            bot_username = (await bot.me).username
-            bot_link = f"https://t.me/{bot_username}?start={message.chat.id}"
-            await message.answer("Для приглашения друга отправть ему ссылку ниже. \n"
-                                 "И получи 💎 за каждый взятый им уровень")
-            await message.answer(bot_link)
+
         # elif message.text == texting.button_help:
         #     pass
         #     help(message)
@@ -198,11 +202,6 @@ async def all_other_messages(message: types.Message):
             await message.answer(text=await new_maps())
 
 
-        elif message.text == texting.button_castle_attack:
-            await sql.sql_insert(
-                "update heroes set message_id = %s where user_id = %s" % (message.message_id + 3, message.chat.id))
-            # users[str(message.chat.id)]["mess_id"] = message.message_id + 1
-            await Castle(message, call="").castle_pole()
         # elif message.text == texting.button_castle_escape_field:
         #     Castle(message).castle_escape_field()
         else:

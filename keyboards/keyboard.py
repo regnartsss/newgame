@@ -111,7 +111,7 @@ def keyboard_battle_one_back():
     return keyboard
 
 def keyboard_locat():
-    keyboard = ReplyKeyboardMarkup()
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.row("🗼 Осада башни")
     keyboard.row (texting.button_back)
     return keyboard

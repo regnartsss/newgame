@@ -14,13 +14,11 @@ def rate_limit(limit: int, key=None):
     :param key:
     :return:
     """
-
     def decorator(func):
         setattr(func, 'throttling_rate_limit', limit)
         if key:
             setattr(func, 'throttling_key', key)
         return func
-
     return decorator
 
 
@@ -35,7 +33,6 @@ class ThrottlingMiddleware(BaseMiddleware):
         super(ThrottlingMiddleware, self).__init__()
 
     async def on_process_message(self, message: types.Message, data: dict):
-        print(message.text)
         """
         This handler is called when dispatcher receives a message
 

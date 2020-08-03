@@ -53,5 +53,5 @@ async def stop(message: types.Message):
 
 @dp.callback_query_handler(lambda callback_query: True)
 async def handler(call: types.CallbackQuery):
-    print(f"Неверная call {call.data}")
+    print(f"Неверная call {call.data.split('_')[:2]}")
     await goto(call=call, message=call.message)

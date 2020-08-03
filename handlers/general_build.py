@@ -5,7 +5,6 @@ from text.texting import text_building_update, button_building
 from work.Users import info_heroes
 
 
-
 @dp.callback_query_handler(text='build_market_null')
 async def market(call: types.CallbackQuery):
     text = await market_text(call.from_user.id)
